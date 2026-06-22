@@ -1121,3 +1121,226 @@ body.cabinet-mode .box-only {
     font-size: 12px;
   }
 }
+
+
+/* v2.2 手機閱讀優化：解決手機需要放大縮小的問題 */
+@media (max-width: 760px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-size: 16px;
+  }
+
+  .layout,
+  .app-header,
+  .mode-switch,
+  .mobile-section-nav,
+  .mobile-bottom-bar,
+  .panel {
+    max-width: 100vw;
+  }
+
+  .app-header h1 {
+    font-size: 22px;
+  }
+
+  .app-header p {
+    font-size: 14px;
+  }
+
+  .mode-btn strong {
+    font-size: 17px;
+  }
+
+  .mode-btn span {
+    font-size: 13px;
+  }
+
+  h2 {
+    font-size: 21px;
+  }
+
+  h3 {
+    font-size: 17px;
+  }
+
+  label {
+    font-size: 15px;
+  }
+
+  input,
+  select,
+  button {
+    font-size: 16px;
+  }
+
+  .panel {
+    overflow: hidden;
+  }
+
+  .table-wrap {
+    overflow: visible;
+    border: 0;
+    max-width: 100%;
+  }
+
+  /* 手機版裁切清單改成卡片，不再使用桌機橫向表格 */
+  #cutTable {
+    display: block;
+    width: 100%;
+    min-width: 0 !important;
+    border-collapse: separate;
+  }
+
+  #cutTable thead {
+    display: none;
+  }
+
+  #cutTable tbody {
+    display: grid;
+    gap: 12px;
+    width: 100%;
+  }
+
+  #cutTable tr {
+    display: block;
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fffdf8;
+    padding: 12px;
+    box-shadow: 0 4px 14px rgba(31, 41, 51, 0.06);
+  }
+
+  #cutTable tr.oversize {
+    background: #fff1f0;
+    border-color: #ffb4ad;
+  }
+
+  #cutTable td {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    border: 0;
+    padding: 7px 0;
+    font-size: 15px;
+  }
+
+  #cutTable td::before {
+    font-weight: 700;
+    color: #5c391d;
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  #cutTable td:nth-child(1)::before { content: "編號"; }
+  #cutTable td:nth-child(2)::before { content: "板件"; }
+  #cutTable td:nth-child(3)::before { content: "分組"; }
+  #cutTable td:nth-child(4)::before { content: "板材"; }
+  #cutTable td:nth-child(5)::before { content: "厚度"; }
+  #cutTable td:nth-child(6)::before { content: "長度"; }
+  #cutTable td:nth-child(7)::before { content: "寬度"; }
+  #cutTable td:nth-child(8)::before { content: "數量"; }
+  #cutTable td:nth-child(9)::before { content: "面積"; }
+  #cutTable td:nth-child(10)::before { content: "備註"; }
+  #cutTable td:nth-child(11)::before { content: "操作"; }
+
+  #cutTable td input,
+  #cutTable td select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    font-size: 16px;
+    min-height: 42px;
+  }
+
+  #cutTable td:nth-child(1) {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 800;
+    color: #2a2119;
+    border-bottom: 1px dashed var(--line);
+    padding-bottom: 10px;
+    margin-bottom: 4px;
+  }
+
+  #cutTable td:nth-child(1)::before {
+    content: "板件 #";
+    font-size: 14px;
+  }
+
+  #cutTable td:nth-child(4),
+  #cutTable td:nth-child(9),
+  #cutTable td:nth-child(11) {
+    color: #263445;
+  }
+
+  #cutTable .hint {
+    font-size: 14px;
+  }
+
+  .cutlist::before {
+    content: "手機版已改成卡片式裁切清單，不需要放大縮小。";
+  }
+
+  .sheet-svg-wrap,
+  .sheet-svg,
+  svg {
+    max-width: 100%;
+  }
+
+  .sheet-card {
+    overflow: hidden;
+  }
+
+  .sheet-part-row {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .sheet-part-size {
+    grid-column: 2;
+  }
+
+  .summary-card div,
+  .material-summary-card,
+  .hardware-card,
+  .hardware-line,
+  .hardware-detail-card {
+    word-break: break-word;
+  }
+
+  .mobile-section-nav {
+    scrollbar-width: none;
+  }
+
+  .mobile-section-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-bottom-bar {
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  #cutTable td {
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+
+  .app-header h1 {
+    font-size: 20px;
+  }
+
+  .mobile-section-nav button {
+    min-width: 60px;
+  }
+}
