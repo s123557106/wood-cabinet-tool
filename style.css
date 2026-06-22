@@ -1344,3 +1344,104 @@ body.cabinet-mode .box-only {
     min-width: 60px;
   }
 }
+
+
+/* v2.3：工程三視圖 */
+.viewer-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.engineering-panel {
+  margin-top: 16px;
+  border-top: 1px dashed var(--line);
+  padding-top: 16px;
+}
+
+.engineering-canvas-wrap {
+  background: linear-gradient(180deg, #1e1821, #241b27);
+  border-radius: 18px;
+  padding: 14px;
+  overflow: auto;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+#engineeringSvgWrap {
+  min-width: 980px;
+}
+
+#engineeringSvgWrap svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.blueprint-note {
+  color: #dbcdf2;
+}
+
+@media (max-width: 760px) {
+  .viewer-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .viewer-actions button {
+    min-height: 42px;
+    font-size: 14px;
+  }
+
+  .engineering-canvas-wrap {
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  #engineeringSvgWrap {
+    min-width: 760px;
+  }
+}
+
+
+/* v2.4 層板高度配置 */
+#shelfHeightOptions {
+  margin-top: 10px;
+}
+
+#shelfLayoutSummary {
+  margin-top: 8px;
+}
+
+.shelf-summary-good {
+  border-color: #b9dfc8 !important;
+  background: #edf7f1 !important;
+  color: #276246 !important;
+}
+
+.shelf-summary-warn {
+  border-color: #f3b554 !important;
+  background: #fff6e6 !important;
+  color: #6e4b00 !important;
+}
+
+@media (max-width: 760px) {
+  #shelfHeightsRaw {
+    font-size: 16px;
+  }
+}
+
+
+/* v2.5 五金勾選收合修正 */
+.hardware-card.is-inactive .hardware-recommend {
+  color: #8a7b6d;
+}
+
+.hardware-card.is-inactive .hardware-toggle strong::after {
+  content: "（未計入）";
+  color: #8a7b6d;
+  font-weight: 500;
+  font-size: 12px;
+  margin-left: 4px;
+}

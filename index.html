@@ -86,6 +86,20 @@
               <option value="fixed">固定層板</option>
             </select>
           </label>
+          <label>層板高度配置
+            <select id="shelfSpacingMode">
+              <option value="equal" selected>自動等分</option>
+              <option value="custom">自訂每格淨高</option>
+            </select>
+          </label>
+        </div>
+        <div id="shelfHeightOptions" class="conditional-options">
+          <label>自訂格高（cm，由上到下，以逗號分隔）
+            <input id="shelfHeightsRaw" type="text" value="" placeholder="例如：30,auto,45">
+          </label>
+          <p id="shelfLayoutSummary" class="material-use">
+            層板數量大於 0 時，可輸入每一格的淨空高度。格數 = 層板數 + 1，可輸入 auto 自動分配剩餘高度。
+          </p>
         </div>
       </section>
 
@@ -261,6 +275,24 @@
           無法載入 Three.js。若你是離線使用，3D 預覽需要網路載入 CDN；裁切計算與排版示意仍可正常使用。
         </div>
       </div>
+
+      <div class="viewer-actions">
+        <button id="generateDrawingBtn" class="secondary">產出工程三視圖</button>
+        <button id="downloadDrawingBtn" class="secondary">下載三視圖 PNG</button>
+      </div>
+      <section id="engineeringPanel" class="engineering-panel is-hidden">
+        <div class="panel-title-row mini-title-row">
+          <div>
+            <h3>工程三視圖</h3>
+            <p id="engineeringCaption">依目前設定產出俯視圖 / 正視圖 / 側視圖</p>
+          </div>
+          <span class="hint">尺寸標註以 mm 顯示</span>
+        </div>
+        <div class="engineering-canvas-wrap">
+          <div id="engineeringSvgWrap"></div>
+        </div>
+      </section>
+
     </section>
 
     <aside class="panel estimate">
@@ -410,7 +442,7 @@
             <input id="hingeEnabled" type="checkbox">
             <strong>估算鉸鍊</strong>
           </label>
-          <p id="hingeRecommend" class="hardware-recommend">選擇門片後會自動推薦鉸鍊數量。</p>
+          <p id="hingeRecommend" class="hardware-recommend">選擇門片後會自動推薦鉸鍊數量，也可手動取消並收合。</p>
           <div id="hingeOptions" class="conditional-options hardware-options">
             <div class="grid-2">
               <label>鉸鍊類型
@@ -432,7 +464,7 @@
             <input id="slideEnabled" type="checkbox">
             <strong>估算抽屜滑軌</strong>
           </label>
-          <p id="slideRecommend" class="hardware-recommend">勾選抽屜後會自動推薦滑軌組數。</p>
+          <p id="slideRecommend" class="hardware-recommend">勾選抽屜後會自動推薦滑軌組數，也可手動取消並收合。</p>
           <div id="slideOptions" class="conditional-options hardware-options">
             <div class="grid-2">
               <label>滑軌類型

@@ -1,4 +1,4 @@
-// 台灣木工櫃體 3D 裁切計算工具 MVP v2.2
+// 台灣木工櫃體 3D 裁切計算工具 MVP v2.5
 // 單位：cm
 // 重點：多板材分組、裁切清單、簡易矩形排版、成本與利用率、3D 示意
 
@@ -101,6 +101,9 @@ let formulaParts = [];
 let customParts = [];
 let lastState = null;
 let lastLayoutGroups = [];
+let engineeringViewEnabled = false;
+let previousDoorFeatureState = null;
+let previousDrawerFeatureState = null;
 
 // -------- 基本工具 --------
 
@@ -360,18 +363,43 @@ function materialTitle(material) {
 
 
 function autoSuggestHardwareFromFeatures() {
-  // 只有功能啟用時自動打開必要五金；如果功能取消，則自動收合。
+  // v2.5 修正：
+  // 第一次啟用門片 / 抽屜時，自動推薦必要五金。
+  // 但使用者手動取消勾選後，不會在每次重新計算時被強制勾回。
   if (currentMode === "box") {
     if ($("hingeEnabled")) $("hingeEnabled").checked = false;
     if ($("slideEnabled")) $("slideEnabled").checked = false;
+    previousDoorFeatureState = false;
+    previousDrawerFeatureState = false;
     return;
   }
 
   const hasDoor = $("doorType").value !== "none";
   const hasDrawers = $("hasDrawers").checked;
 
-  $("hingeEnabled").checked = hasDoor;
-  $("slideEnabled").checked = hasDrawers;
+  const hingeEl = $("hingeEnabled");
+  const slideEl = $("slideEnabled");
+
+  if (hingeEl) {
+    if (!hasDoor) {
+      hingeEl.checked = false;
+    } else if (previousDoorFeatureState === null || previousDoorFeatureState === false) {
+      // 從「無門片」變成「有門片」時，才自動勾選一次。
+      hingeEl.checked = true;
+    }
+  }
+
+  if (slideEl) {
+    if (!hasDrawers) {
+      slideEl.checked = false;
+    } else if (previousDrawerFeatureState === null || previousDrawerFeatureState === false) {
+      // 從「無抽屜」變成「有抽屜」時，才自動勾選一次。
+      slideEl.checked = true;
+    }
+  }
+
+  previousDoorFeatureState = hasDoor;
+  previousDrawerFeatureState = hasDrawers;
 }
 
 function getDoorHardwareRecommendation(state) {
@@ -483,6 +511,8 @@ function getState() {
     assemblyType: $("assemblyType").value,
     shelfCount: Math.max(0, Math.floor(n("shelfCount"))),
     shelfType: $("shelfType").value,
+    shelfSpacingMode: $("shelfSpacingMode") ? $("shelfSpacingMode").value : "equal",
+    shelfHeightsRaw: $("shelfHeightsRaw") ? $("shelfHeightsRaw").value : "",
     hasBack: $("hasBack").checked,
     backT: n("backT"),
     backType: $("backType").value,
@@ -606,6 +636,181 @@ function getDoorPanelInfo(state) {
     panelH: cm(panelH),
     note,
   };
+}
+
+
+
+function getShelfOpeningLayout(state) {
+  const shelfCount = Math.max(0, Math.floor(state.shelfCount || 0));
+  const openingCount = shelfCount + 1;
+  const available = cm(Math.max(0, state.H - 2 * state.t - shelfCount * state.t));
+
+  if (shelfCount <= 0) {
+    return {
+      available,
+      openings: [available],
+      openingCount: 1,
+      mode: "none",
+      adjusted: false,
+      warning: "",
+    };
+  }
+
+  const equalValue = cm(available / openingCount);
+
+  if (state.shelfSpacingMode !== "custom") {
+    return {
+      available,
+      openings: Array(openingCount).fill(equalValue),
+      openingCount,
+      mode: "equal",
+      adjusted: false,
+      warning: "",
+    };
+  }
+
+  const raw = String(state.shelfHeightsRaw || "").trim();
+  if (!raw) {
+    return {
+      available,
+      openings: Array(openingCount).fill(equalValue),
+      openingCount,
+      mode: "custom",
+      adjusted: true,
+      warning: "尚未輸入自訂格高，目前暫時用等分配置。",
+    };
+  }
+
+  const tokens = raw.split(/[,，、\s]+/).map(s => s.trim()).filter(Boolean);
+  const openings = [];
+  const autoIndexes = [];
+  let fixedSum = 0;
+
+  for (let i = 0; i < openingCount; i++) {
+    const token = tokens[i] || "auto";
+    if (/^(auto|自動|\*)$/i.test(token)) {
+      openings[i] = null;
+      autoIndexes.push(i);
+      continue;
+    }
+
+    const value = Number(token);
+    if (Number.isFinite(value) && value > 0) {
+      openings[i] = value;
+      fixedSum += value;
+    } else {
+      openings[i] = null;
+      autoIndexes.push(i);
+    }
+  }
+
+  let warning = "";
+  let adjusted = false;
+
+  if (tokens.length !== openingCount) {
+    warning += `輸入格數 ${tokens.length} 與應有格數 ${openingCount} 不一致；`;
+    adjusted = true;
+  }
+
+  const remaining = cm(available - fixedSum);
+
+  if (autoIndexes.length > 0) {
+    const autoValue = cm(Math.max(1, remaining / autoIndexes.length));
+    autoIndexes.forEach(index => openings[index] = autoValue);
+    if (remaining < 0) {
+      warning += "固定格高總和已超過可用高度，系統已壓縮 auto 格；";
+      adjusted = true;
+    }
+  } else {
+    const diff = cm(available - fixedSum);
+    if (Math.abs(diff) > 0.1) {
+      adjusted = true;
+      if (fixedSum > available) {
+        const ratio = available / fixedSum;
+        for (let i = 0; i < openings.length; i++) openings[i] = cm(openings[i] * ratio);
+        warning += "自訂格高總和超過可用高度，系統已等比例縮放；";
+      } else {
+        openings[openings.length - 1] = cm(openings[openings.length - 1] + diff);
+        warning += `自訂格高總和小於可用高度，剩餘 ${cm(diff)} cm 已補到最後一格；`;
+      }
+    }
+  }
+
+  return {
+    available,
+    openings: openings.map(v => cm(Math.max(0, v || 0))),
+    openingCount,
+    mode: "custom",
+    adjusted,
+    warning,
+  };
+}
+
+function getShelfCenterPositionsCm(state) {
+  const shelfCount = Math.max(0, Math.floor(state.shelfCount || 0));
+  if (shelfCount <= 0) return [];
+
+  const layout = getShelfOpeningLayout(state);
+  const positions = [];
+  const topInnerY = state.H / 2 - state.t;
+
+  let usedFromTop = 0;
+  for (let i = 0; i < shelfCount; i++) {
+    usedFromTop += layout.openings[i];
+    const centerY = topInnerY - usedFromTop - i * state.t - state.t / 2;
+    positions.push(cm(centerY));
+  }
+
+  return positions;
+}
+
+function renderShelfLayoutSummary(state) {
+  const summary = $("shelfLayoutSummary");
+  const options = $("shelfHeightOptions");
+  if (!summary || !options) return;
+
+  const hasShelves = Math.max(0, Math.floor(state.shelfCount || 0)) > 0;
+  options.classList.toggle("is-hidden", !hasShelves);
+
+  if (!hasShelves) {
+    summary.textContent = "目前沒有層板。";
+    return;
+  }
+
+  const layout = getShelfOpeningLayout(state);
+  const list = layout.openings.map(v => `${cm(v)} cm`).join(" / ");
+  const modeText = state.shelfSpacingMode === "custom" ? "自訂格高" : "自動等分";
+
+  summary.classList.toggle("shelf-summary-warn", Boolean(layout.warning));
+  summary.classList.toggle("shelf-summary-good", !layout.warning);
+
+  summary.textContent = `${modeText}：由上到下淨空格高 ${list}。可用淨空總高 ${layout.available} cm。${layout.warning ? " " + layout.warning : ""}`;
+}
+
+
+function getDepthOffsets(state) {
+  const frontInset = state.mode === "cabinet" && state.doorType !== "none" && state.doorStyle === "inset"
+    ? state.t
+    : 0;
+
+  const backInset = state.mode === "cabinet" && state.hasBack && state.backType === "inset"
+    ? state.backT
+    : 0;
+
+  return {
+    frontInset: cm(frontInset),
+    backInset: cm(backInset),
+  };
+}
+
+function getShelfDepth(state) {
+  const { frontInset, backInset } = getDepthOffsets(state);
+  return cm(Math.max(0, state.D - frontInset - backInset));
+}
+
+function getShelfZOffset(state) {
+  const { frontInset, backInset } = getDepthOffsets(state);
+  return cm((frontInset - backInset) / 2);
 }
 
 function getDrawerFrontInfo(state) {
@@ -735,6 +940,8 @@ function calculateFormulaParts(state) {
   const bodyMat = materials.body;
   const backMat = materials.back;
   const doorMat = materials.door;
+  const shelfDepth = getShelfDepth(state);
+  const { frontInset, backInset } = getDepthOffsets(state);
 
   if (assemblyType === "sideFull") {
     parts.push(addPart("左側板", "body", bodyMat, t, H, D, 1, "側板完整高度"));
@@ -743,7 +950,10 @@ function calculateFormulaParts(state) {
     parts.push(addPart("底板", "body", bodyMat, t, W - 2 * t, D, 1, "扣左右側板厚度"));
 
     if (shelfCount > 0) {
-      parts.push(addPart(shelfType === "adjustable" ? "活動層板" : "固定層板", "body", bodyMat, t, W - 2 * t, D, shelfCount, "扣左右側板厚度"));
+      const note = doorStyle === "inset" || (hasBack && backType === "inset")
+        ? `扣左右側板厚度；層板深度 = D - 前預留 ${frontInset} - 背板預留 ${backInset}`
+        : "扣左右側板厚度";
+      parts.push(addPart(shelfType === "adjustable" ? "活動層板" : "固定層板", "body", bodyMat, t, W - 2 * t, shelfDepth, shelfCount, note));
     }
   }
 
@@ -754,7 +964,10 @@ function calculateFormulaParts(state) {
     parts.push(addPart("右側板", "body", bodyMat, t, H - 2 * t, D, 1, "扣頂底板厚度"));
 
     if (shelfCount > 0) {
-      parts.push(addPart(shelfType === "adjustable" ? "活動層板" : "固定層板", "body", bodyMat, t, W - 2 * t, D, shelfCount, "層板扣左右側板厚度"));
+      const note = doorStyle === "inset" || (hasBack && backType === "inset")
+        ? `層板扣左右側板厚度；層板深度 = D - 前預留 ${frontInset} - 背板預留 ${backInset}`
+        : "層板扣左右側板厚度";
+      parts.push(addPart(shelfType === "adjustable" ? "活動層板" : "固定層板", "body", bodyMat, t, W - 2 * t, shelfDepth, shelfCount, note));
     }
   }
 
@@ -972,6 +1185,11 @@ function validate(state, allParts, layoutGroups) {
   if (state.hasDrawers && state.materials.drawerBottom.type === "blockboard" && state.materials.drawerBottom.thickness < 1.5) warnings.push("抽屜底板目前選到木心板但厚度偏薄，請確認板材設定；實務上抽屜底板通常會用薄夾板。");
   if (state.gap < 0) warnings.push("門縫 gap 不可為負數。");
 
+  if (state.shelfCount > 0 && state.shelfSpacingMode === "custom") {
+    const shelfLayout = getShelfOpeningLayout(state);
+    if (shelfLayout.warning) warnings.push(`層板高度配置：${shelfLayout.warning}`);
+  }
+
   if (state.doorType !== "none") {
     const info = getDoorPanelInfo(state);
     if (info.panelH <= 0 || info.panelW <= 0) warnings.push("門片分段後尺寸小於或等於 0，請檢查層板數量、門縫、板厚與外蓋量。");
@@ -1085,11 +1303,21 @@ function renderHardware(state, hardware) {
   const hingeRec = getDoorHardwareRecommendation(state);
   const slideRec = getSlideHardwareRecommendation(state);
 
-  $("hingeRecommend").textContent = hingeRec.text;
-  $("slideRecommend").textContent = slideRec.text;
-
   const hingeOn = state.hardware.hingeEnabled && state.doorType !== "none";
   const slideOn = state.hardware.slideEnabled && state.hasDrawers;
+
+  $("hingeRecommend").textContent = state.doorType === "none"
+    ? hingeRec.text
+    : hingeOn
+      ? hingeRec.text
+      : `已手動取消鉸鍊估算。系統原本推薦 ${hingeRec.total} 顆，但目前不計入成本。`;
+
+  $("slideRecommend").textContent = !state.hasDrawers
+    ? slideRec.text
+    : slideOn
+      ? slideRec.text
+      : `已手動取消滑軌估算。系統原本推薦 ${slideRec.total} 組，但目前不計入成本。`;
+
   const handleOn = state.hardware.handleEnabled;
   const shelfPinOn = state.hardware.shelfPinEnabled;
 
@@ -1174,9 +1402,11 @@ function renderAll() {
   renderHardware(state, hardware);
   renderLayoutSummary(layoutGroups);
   renderSheetLayouts(layoutGroups);
+  renderShelfLayoutSummary(state);
   renderWarnings(validate(state, allParts, layoutGroups));
   renderTable(state, allParts);
   render3D(state);
+  renderEngineeringDrawing(state);
 
   $("dimensionText").textContent = `外尺寸：${state.W} × ${state.H} × ${state.D} cm`;
 }
@@ -1196,6 +1426,254 @@ function refreshCustomPartMaterial(part, state) {
     materialName: material.materialName,
   };
 }
+
+
+function mmText(cmValue) {
+  return `${Math.round(cmValue * 10)} mm`;
+}
+
+function escAttr(str) {
+  return String(str).replace(/"/g, "&quot;");
+}
+
+function renderEngineeringDrawing(state) {
+  const panel = $("engineeringPanel");
+  const wrap = $("engineeringSvgWrap");
+  const caption = $("engineeringCaption");
+  if (!panel || !wrap) return;
+
+  if (!engineeringViewEnabled) {
+    panel.classList.add("is-hidden");
+    wrap.innerHTML = "";
+    return;
+  }
+
+  panel.classList.remove("is-hidden");
+
+  const svgW = 1000;
+  const svgH = 760;
+  const bg = "#201922";
+  const line = "#f1ecff";
+  const dim = "#c8bde0";
+  const guide = "#8f83a8";
+  const accent = "#fff7b1";
+
+  const topBox = { x: 80, y: 70, w: 410, h: 120 };
+  const frontBox = { x: 80, y: 230, w: 410, h: 430 };
+  const sideBox = { x: 610, y: 230, w: 180, h: 430 };
+  const titleX = 90;
+
+  const scale = Math.min(
+    topBox.w / Math.max(1, state.W),
+    topBox.h / Math.max(1, state.D),
+    frontBox.w / Math.max(1, state.W),
+    frontBox.h / Math.max(1, state.H),
+    sideBox.w / Math.max(1, state.D),
+    sideBox.h / Math.max(1, state.H)
+  );
+
+  const { frontInset, backInset } = getDepthOffsets(state);
+  const shelfDepth = getShelfDepth(state);
+  const shelfCount = state.mode === "cabinet" ? state.shelfCount : 0;
+
+  function dimH(x1, x2, y, text) {
+    return `
+      <line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${dim}" stroke-width="1.2"/>
+      <line x1="${x1}" y1="${y - 7}" x2="${x1}" y2="${y + 7}" stroke="${dim}" stroke-width="1.2"/>
+      <line x1="${x2}" y1="${y - 7}" x2="${x2}" y2="${y + 7}" stroke="${dim}" stroke-width="1.2"/>
+      <text x="${(x1 + x2) / 2}" y="${y - 10}" fill="${dim}" font-size="16" text-anchor="middle">${escAttr(text)}</text>
+    `;
+  }
+
+  function dimV(x, y1, y2, text) {
+    return `
+      <line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${dim}" stroke-width="1.2"/>
+      <line x1="${x - 7}" y1="${y1}" x2="${x + 7}" y2="${y1}" stroke="${dim}" stroke-width="1.2"/>
+      <line x1="${x - 7}" y1="${y2}" x2="${x + 7}" y2="${y2}" stroke="${dim}" stroke-width="1.2"/>
+      <text x="${x - 12}" y="${(y1 + y2) / 2}" fill="${dim}" font-size="16" text-anchor="middle"
+        transform="rotate(-90 ${x - 12} ${(y1 + y2) / 2})">${escAttr(text)}</text>
+    `;
+  }
+
+  function drawRect(x, y, w, h, stroke = line, dash = "") {
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${stroke}" stroke-width="2" ${dash ? `stroke-dasharray="${dash}"` : ""}/>`;
+  }
+
+  // Top
+  const topW = state.W * scale;
+  const topD = state.D * scale;
+  const topX = topBox.x + (topBox.w - topW) / 2;
+  const topY = topBox.y + (topBox.h - topD) / 2;
+
+  // Front
+  const frontW = state.W * scale;
+  const frontH = state.H * scale;
+  const frontX = frontBox.x + (frontBox.w - frontW) / 2;
+  const frontY = frontBox.y + (frontBox.h - frontH) / 2;
+
+  // Side
+  const sideD = state.D * scale;
+  const sideH = state.H * scale;
+  const sideX = sideBox.x + (sideBox.w - sideD) / 2;
+  const sideY = sideBox.y + (sideBox.h - sideH) / 2;
+
+  let svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">
+      <rect x="0" y="0" width="${svgW}" height="${svgH}" fill="${bg}"/>
+      <text x="${titleX}" y="38" fill="${line}" font-size="24" font-weight="700">工程三視圖</text>
+      <text x="${titleX}" y="62" fill="${guide}" font-size="14">模式：${state.mode === "box" ? "箱體模式" : "櫃體模式"}｜外尺寸 ${state.W} × ${state.H} × ${state.D} cm</text>
+
+      <text x="${topBox.x}" y="${topBox.y - 18}" fill="${guide}" font-size="16">俯視圖 TOP</text>
+      ${drawRect(topX, topY, topW, topD)}
+      ${dimH(topX, topX + topW, topY - 18, mmText(state.W))}
+      ${dimV(topX + topW + 22, topY, topY + topD, mmText(state.D))}
+
+      <text x="${frontBox.x}" y="${frontBox.y - 18}" fill="${guide}" font-size="16">正視圖 FRONT</text>
+      ${drawRect(frontX, frontY, frontW, frontH)}
+      ${dimH(frontX, frontX + frontW, frontY + frontH + 28, mmText(state.W))}
+      ${dimV(frontX - 22, frontY, frontY + frontH, mmText(state.H))}
+
+      <text x="${sideBox.x}" y="${sideBox.y - 18}" fill="${guide}" font-size="16">側視圖 SIDE</text>
+      ${drawRect(sideX, sideY, sideD, sideH)}
+      ${dimH(sideX, sideX + sideD, sideY + sideH + 28, mmText(state.D))}
+      ${dimV(sideX - 22, sideY, sideY + sideH, mmText(state.H))}
+  `;
+
+  // Top/Bottom board guide lines in FRONT + SIDE
+  const topBoardY = frontY + state.t * scale;
+  const bottomBoardY = frontY + frontH - state.t * scale;
+  svg += `
+    <line x1="${frontX}" y1="${topBoardY}" x2="${frontX + frontW}" y2="${topBoardY}" stroke="${guide}" stroke-width="1" stroke-dasharray="4 4"/>
+    <line x1="${frontX}" y1="${bottomBoardY}" x2="${frontX + frontW}" y2="${bottomBoardY}" stroke="${guide}" stroke-width="1" stroke-dasharray="4 4"/>
+    <line x1="${sideX}" y1="${sideY + state.t * scale}" x2="${sideX + sideD}" y2="${sideY + state.t * scale}" stroke="${guide}" stroke-width="1" stroke-dasharray="4 4"/>
+    <line x1="${sideX}" y1="${sideY + sideH - state.t * scale}" x2="${sideX + sideD}" y2="${sideY + sideH - state.t * scale}" stroke="${guide}" stroke-width="1" stroke-dasharray="4 4"/>
+  `;
+
+  // Shelves in front and side
+  if (state.mode === "cabinet" && shelfCount > 0) {
+    const shelfFrontDepthPx = shelfDepth * scale;
+    const shelfZPx = getShelfZOffset(state) * scale;
+    const shelfSideX = sideX + (sideD - shelfFrontDepthPx) / 2 + shelfZPx;
+    const shelfCentersCm = getShelfCenterPositionsCm(state);
+
+    shelfCentersCm.forEach((centerYcm) => {
+      const y = frontY + frontH / 2 - centerYcm * scale;
+      svg += `
+        <line x1="${frontX}" y1="${y}" x2="${frontX + frontW}" y2="${y}" stroke="${line}" stroke-width="2"/>
+        <line x1="${shelfSideX}" y1="${sideY + sideH / 2 - centerYcm * scale}" x2="${shelfSideX + shelfFrontDepthPx}" y2="${sideY + sideH / 2 - centerYcm * scale}" stroke="${line}" stroke-width="2"/>
+      `;
+    });
+  }
+
+  // Inset back guides in top / side
+  if (state.mode === "cabinet" && state.hasBack && state.backType === "inset") {
+    const backLineXTop = topX + topW - state.backT * scale;
+    const backLineXSide = sideX + sideD - state.backT * scale;
+    svg += `
+      <line x1="${backLineXTop}" y1="${topY}" x2="${backLineXTop}" y2="${topY + topD}" stroke="${accent}" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <line x1="${backLineXSide}" y1="${sideY}" x2="${backLineXSide}" y2="${sideY + sideH}" stroke="${accent}" stroke-width="1.5" stroke-dasharray="5 4"/>
+    `;
+  }
+
+  // Inset front guide in top / side
+  if (state.mode === "cabinet" && state.doorType !== "none" && state.doorStyle === "inset") {
+    const frontGuideXTop = topX + state.t * scale;
+    const frontGuideXSide = sideX + state.t * scale;
+    svg += `
+      <line x1="${frontGuideXTop}" y1="${topY}" x2="${frontGuideXTop}" y2="${topY + topD}" stroke="${accent}" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <line x1="${frontGuideXSide}" y1="${sideY}" x2="${frontGuideXSide}" y2="${sideY + sideH}" stroke="${accent}" stroke-width="1.5" stroke-dasharray="5 4"/>
+    `;
+  }
+
+  // Door rectangles in FRONT
+  if (state.mode === "cabinet" && state.doorType !== "none") {
+    const info = getDoorPanelInfo(state);
+    const rows = info.rows;
+    const cols = info.columns;
+    const panelW = info.panelW * scale;
+    const panelH = info.panelH * scale;
+    const gapPx = state.gap * scale;
+    const totalH = rows * panelH + (rows - 1) * gapPx;
+    const startY = frontY + frontH / 2 - totalH / 2 + panelH / 2;
+    const totalW = cols === 2 ? panelW * 2 + gapPx : panelW;
+    const startX = frontX + frontW / 2 - totalW / 2;
+
+    for (let r = 0; r < rows; r++) {
+      const y = startY + r * (panelH + gapPx) - panelH / 2;
+      if (cols === 1) {
+        svg += drawRect(startX, y, panelW, panelH, "#d5d0ff", "4 3");
+      } else {
+        svg += drawRect(startX, y, panelW, panelH, "#d5d0ff", "4 3");
+        svg += drawRect(startX + panelW + gapPx, y, panelW, panelH, "#d5d0ff", "4 3");
+      }
+    }
+  }
+
+  // Box mode internal guides
+  if (state.mode === "box") {
+    if (state.boxHasLid) {
+      svg += `<text x="${sideBox.x + 5}" y="${sideBox.y + sideBox.h + 58}" fill="${accent}" font-size="14">＊包含獨立上蓋</text>`;
+    }
+    if (state.boxHasInnerBottom) {
+      svg += `<text x="${sideBox.x + 5}" y="${sideBox.y + sideBox.h + 80}" fill="${accent}" font-size="14">＊包含內底板</text>`;
+    }
+  }
+
+  // Notes
+  const note1 = state.mode === "cabinet" && state.doorType !== "none" && state.doorStyle === "inset"
+    ? `內崁門層板深度：${state.D} - ${state.t} - ${state.hasBack && state.backType === "inset" ? state.backT : 0} = ${shelfDepth} cm`
+    : `層板深度：${shelfDepth} cm`;
+
+  const note2 = state.mode === "cabinet" && state.hasBack && state.backType === "inset"
+    ? `已扣除內嵌背板厚度 ${state.backT} cm`
+    : "背板未占用內部層板深度";
+
+  svg += `
+      <text x="80" y="710" fill="${line}" font-size="15">${escAttr(note1)}</text>
+      <text x="80" y="734" fill="${guide}" font-size="14">${escAttr(note2)}</text>
+    </svg>
+  `;
+
+  wrap.innerHTML = svg;
+
+  if (caption) {
+    caption.textContent = `目前設定：${state.mode === "box" ? "箱體" : "櫃體"}｜俯視圖 / 正視圖 / 側視圖`;
+  }
+}
+
+function downloadEngineeringPng() {
+  const svgWrap = $("engineeringSvgWrap");
+  if (!svgWrap || !svgWrap.querySelector("svg")) {
+    alert("請先按「產出工程三視圖」。");
+    return;
+  }
+
+  const svg = svgWrap.querySelector("svg");
+  const serializer = new XMLSerializer();
+  const source = serializer.serializeToString(svg);
+  const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+
+  img.onload = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = svg.viewBox.baseVal.width * 2;
+    canvas.height = svg.viewBox.baseVal.height * 2;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#201922";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = "wood-cabinet-engineering-view.png";
+    a.click();
+  };
+
+  img.src = url;
+}
+
 
 function renderSummary(layoutGroups, hardware = { cost: 0 }) {
   const totalSheets = layoutGroups.reduce((sum, group) => sum + group.sheets.length, 0);
@@ -1736,12 +2214,12 @@ function render3D(state) {
   }
 
   if (state.shelfCount > 0) {
-    const innerH = H - 2 * t;
-    const step = innerH / (state.shelfCount + 1);
-    for (let i = 1; i <= state.shelfCount; i++) {
-      const y = -H / 2 + t + step * i;
-      board("層板", W - 2 * t, t, D * 0.96, 0, y, 0, matShelf);
-    }
+    const shelfDepth = getShelfDepth(state) * scale;
+    const shelfZ = getShelfZOffset(state) * scale;
+    const shelfCentersCm = getShelfCenterPositionsCm(state);
+    shelfCentersCm.forEach((centerYcm, index) => {
+      board(`層板 ${index + 1}`, W - 2 * t, t, shelfDepth, 0, centerYcm * scale, shelfZ, matShelf);
+    });
   }
 
   if (state.hasBack) {
@@ -1753,7 +2231,9 @@ function render3D(state) {
   }
 
   if (state.doorType !== "none") {
-    const doorZ = -D / 2 - doorT / 2;
+    const doorZ = state.doorStyle === "inset"
+      ? -D / 2 + doorT / 2
+      : -D / 2 - doorT / 2;
     const info = getDoorPanelInfo(state);
     const rows = info.rows;
     const panelH = info.panelH * scale;
@@ -1798,6 +2278,8 @@ function updateConditionalUI() {
   const hasToeKick = $("hasToeKick").checked;
   const hasDrawers = $("hasDrawers").checked;
   const doorSame = $("doorSameAsBody").checked;
+  const hasShelves = Number($("shelfCount").value || 0) > 0;
+  const isCustomShelfSpacing = $("shelfSpacingMode") && $("shelfSpacingMode").value === "custom";
 
   const toggle = (id, show) => {
     const el = $(id);
@@ -1810,6 +2292,10 @@ function updateConditionalUI() {
   toggle("doorMaterialPanel", hasDoor || hasDrawers);
   toggle("doorMaterialCustomOptions", (hasDoor || hasDrawers) && !doorSame);
   toggle("toeKickOptions", hasToeKick);
+  toggle("shelfHeightOptions", hasShelves && !isBox);
+  const shelfInput = $("shelfHeightsRaw");
+  if (shelfInput) shelfInput.closest("label").classList.toggle("is-hidden", !(hasShelves && isCustomShelfSpacing && !isBox));
+
   toggle("drawerOptions", hasDrawers && !isBox);
   toggle("drawerSideMaterialPanel", hasDrawers && !isBox);
   toggle("drawerBottomMaterialPanel", hasDrawers && !isBox);
@@ -1983,6 +2469,19 @@ function bindEvents() {
   $("saveBtn").addEventListener("click", saveProject);
   $("loadBtn").addEventListener("click", loadProject);
   $("resetBtn").addEventListener("click", resetAll);
+
+  const generateDrawingBtn = $("generateDrawingBtn");
+  if (generateDrawingBtn) {
+    generateDrawingBtn.addEventListener("click", () => {
+      engineeringViewEnabled = true;
+      renderEngineeringDrawing(lastState || getState());
+    });
+  }
+
+  const downloadDrawingBtn = $("downloadDrawingBtn");
+  if (downloadDrawingBtn) {
+    downloadDrawingBtn.addEventListener("click", downloadEngineeringPng);
+  }
 }
 
 
