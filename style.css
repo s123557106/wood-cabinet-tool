@@ -711,3 +711,413 @@ td input, td select { margin: 0; padding: 7px 8px; }
     padding-top: calc(16px + env(safe-area-inset-top));
   }
 }
+
+
+/* v2.0 手機介面優化：不影響桌機版，只在 760px 以下生效 */
+.mobile-section-nav {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: #f7f3eb;
+    color: #182230;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .app-header {
+    display: block;
+    padding: 18px 16px 14px;
+    background: linear-gradient(180deg, #2a2119, #3a2b20);
+  }
+
+  .app-header h1 {
+    font-size: 21px;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+    margin-bottom: 6px;
+  }
+
+  .app-header p {
+    font-size: 13px;
+    line-height: 1.55;
+    color: #eadfce;
+  }
+
+  .header-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .header-actions button {
+    width: 100%;
+    min-height: 42px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  .mobile-section-nav {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 9px 10px;
+    background: rgba(247, 243, 235, 0.96);
+    border-bottom: 1px solid #d8d2c5;
+    backdrop-filter: blur(10px);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-section-nav button {
+    flex: 0 0 auto;
+    min-width: 64px;
+    min-height: 38px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #fffdf8;
+    color: #3b2d21;
+    border: 1px solid #d8d2c5;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(31, 41, 51, 0.06);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 14px;
+  }
+
+  .panel {
+    padding: 16px;
+    border-radius: 18px;
+    box-shadow: 0 6px 18px rgba(31, 41, 51, 0.07);
+  }
+
+  .panel, .form-section, .feature-section, .compact-card, .hardware-card, .optional-hardware {
+    scroll-margin-top: 62px;
+  }
+
+  h2 {
+    font-size: 20px;
+    line-height: 1.3;
+    margin-bottom: 12px;
+  }
+
+  h3 {
+    font-size: 16px;
+    line-height: 1.35;
+    margin-bottom: 12px;
+  }
+
+  label {
+    font-size: 14px;
+    line-height: 1.35;
+    margin-bottom: 12px;
+    color: #4b5565;
+  }
+
+  input, select {
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 16px;
+    background: #fffefb;
+  }
+
+  input[type="checkbox"] {
+    min-height: auto;
+    width: 20px;
+    height: 20px;
+    accent-color: #7a4f2b;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .checkline {
+    min-height: 42px;
+    align-items: center;
+    font-size: 15px;
+  }
+
+  .form-section {
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+
+  .feature-section, .compact-card {
+    padding: 14px;
+    border-radius: 16px;
+    background: #fffdf8;
+  }
+
+  .conditional-options {
+    margin-top: 10px;
+    padding-top: 12px;
+  }
+
+  .material-use, .ui-hint, .notice, .drawer-material-note {
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 10px 12px;
+  }
+
+  .panel-title-row {
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .panel-title-row p {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .hint {
+    font-size: 12px;
+    color: #667085;
+  }
+
+  #threeWrap {
+    height: 340px;
+    border-radius: 16px;
+  }
+
+  .summary-card { gap: 8px; }
+
+  .summary-card div {
+    padding: 13px 14px;
+    border-radius: 14px;
+  }
+
+  .summary-card span { font-size: 13px; }
+  .summary-card strong { font-size: 18px; }
+
+  .hardware-pill {
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .hardware-card {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .hardware-recommend {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .layout-summary {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .material-summary-card {
+    padding: 13px;
+    border-radius: 16px;
+  }
+
+  .material-summary-card p {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .sheet-layouts { gap: 14px; }
+  .material-layout-group { padding-top: 14px; }
+
+  .material-layout-group h3 {
+    font-size: 17px;
+    line-height: 1.35;
+  }
+
+  .sheet-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .sheet-card {
+    border-radius: 16px;
+    padding: 12px;
+  }
+
+  .sheet-card h4 {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .sheet-svg-wrap {
+    padding: 6px;
+    border-radius: 12px;
+  }
+
+  .sheet-part-list { gap: 6px; }
+
+  .sheet-part-row {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 7px 8px;
+    font-size: 13px;
+    padding: 6px 0;
+    border-bottom: 1px dashed rgba(216, 210, 197, 0.8);
+  }
+
+  .sheet-part-row:last-child { border-bottom: 0; }
+
+  .sheet-part-badge {
+    min-width: 30px;
+    height: 24px;
+  }
+
+  .sheet-part-size {
+    grid-column: 2;
+    white-space: normal;
+    font-size: 12px;
+  }
+
+  .table-wrap {
+    max-height: none;
+    overflow-x: auto;
+    border-radius: 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table { min-width: 960px; }
+
+  th, td {
+    font-size: 12px;
+    padding: 8px 7px;
+  }
+
+  td input, td select {
+    min-height: 38px;
+    font-size: 14px;
+    padding: 7px 8px;
+  }
+
+  .cutlist::before {
+    content: "提示：裁切清單在手機可左右滑動查看完整欄位。";
+    display: block;
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #edf7f1;
+    border: 1px solid #b9dfc8;
+    color: #276246;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .mobile-bottom-bar {
+    grid-template-columns: 1.25fr 1fr 1fr 1fr;
+    gap: 7px;
+    padding: 9px 10px calc(9px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-bottom-bar button {
+    min-height: 44px;
+    padding: 10px 6px;
+    font-size: 13px;
+    border-radius: 13px;
+  }
+
+  .app-footer {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 390px) {
+  .app-header h1 { font-size: 19px; }
+  .mobile-section-nav button {
+    min-width: 58px;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  #threeWrap { height: 300px; }
+  .mobile-bottom-bar button { font-size: 12px; }
+}
+
+
+/* v2.1 模式切換 */
+.mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 14px 16px 0;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.mode-btn {
+  text-align: left;
+  border: 1px solid var(--line);
+  background: #fffdf8;
+  color: var(--ink);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 6px 18px rgba(31, 41, 51, 0.06);
+}
+
+.mode-btn strong {
+  display: block;
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+
+.mode-btn span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.mode-btn.active {
+  background: #2a2119;
+  color: #ffffff;
+  border-color: #2a2119;
+}
+
+.mode-btn.active span {
+  color: #eadfce;
+}
+
+body.box-mode .cabinet-only {
+  display: none !important;
+}
+
+body.box-mode .viewer #dimensionText::after {
+  content: "｜箱體模式";
+}
+
+body.cabinet-mode .box-only {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .mode-switch {
+    grid-template-columns: 1fr;
+    padding: 10px 12px 0;
+    gap: 8px;
+  }
+
+  .mode-btn {
+    padding: 12px 14px;
+    border-radius: 15px;
+  }
+
+  .mode-btn strong {
+    font-size: 16px;
+  }
+
+  .mode-btn span {
+    font-size: 12px;
+  }
+}

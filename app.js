@@ -1,4 +1,4 @@
-// 台灣木工櫃體 3D 裁切計算工具 MVP v1.9
+// 台灣木工櫃體 3D 裁切計算工具 MVP v2.1
 // 單位：cm
 // 重點：多板材分組、裁切清單、簡易矩形排版、成本與利用率、3D 示意
 
@@ -361,6 +361,12 @@ function materialTitle(material) {
 
 function autoSuggestHardwareFromFeatures() {
   // 只有功能啟用時自動打開必要五金；如果功能取消，則自動收合。
+  if (currentMode === "box") {
+    if ($("hingeEnabled")) $("hingeEnabled").checked = false;
+    if ($("slideEnabled")) $("slideEnabled").checked = false;
+    return;
+  }
+
   const hasDoor = $("doorType").value !== "none";
   const hasDrawers = $("hasDrawers").checked;
 
@@ -408,6 +414,41 @@ function getSlideHardwareRecommendation(state) {
   };
 }
 
+
+let currentMode = localStorage.getItem("woodCabinetToolMode") || "cabinet";
+
+function setToolMode(mode) {
+  currentMode = mode === "box" ? "box" : "cabinet";
+  localStorage.setItem("woodCabinetToolMode", currentMode);
+
+  document.body.classList.toggle("box-mode", currentMode === "box");
+  document.body.classList.toggle("cabinet-mode", currentMode === "cabinet");
+
+  const cabinetBtn = $("cabinetModeBtn");
+  const boxBtn = $("boxModeBtn");
+  if (cabinetBtn) cabinetBtn.classList.toggle("active", currentMode === "cabinet");
+  if (boxBtn) boxBtn.classList.toggle("active", currentMode === "box");
+
+  updateConditionalUI();
+}
+
+function initModeSwitch() {
+  const cabinetBtn = $("cabinetModeBtn");
+  const boxBtn = $("boxModeBtn");
+
+  if (cabinetBtn) cabinetBtn.addEventListener("click", () => {
+    setToolMode("cabinet");
+    renderAll();
+  });
+
+  if (boxBtn) boxBtn.addEventListener("click", () => {
+    setToolMode("box");
+    renderAll();
+  });
+
+  setToolMode(currentMode);
+}
+
 function getState() {
   syncDoorFromBody();
 
@@ -434,6 +475,7 @@ function getState() {
   const slideOpt = selectedSlideOption();
 
   return {
+    mode: currentMode,
     W: n("cabinetW"),
     H: n("cabinetH"),
     D: n("cabinetD"),
@@ -466,6 +508,13 @@ function getState() {
     hasToeKick: $("hasToeKick").checked,
     toeKickH: n("toeKickH"),
     toeKickInset: n("toeKickInset"),
+
+    boxType: $("boxType") ? $("boxType").value : "openFront",
+    boxUse: $("boxUse") ? $("boxUse").value : "prop",
+    boxHasLid: $("boxHasLid") ? $("boxHasLid").checked : false,
+    boxHasInnerBottom: $("boxHasInnerBottom") ? $("boxHasInnerBottom").checked : false,
+    boxLidOverlay: $("boxLidOverlay") ? n("boxLidOverlay") : 1,
+    boxInnerBottomGap: $("boxInnerBottomGap") ? n("boxInnerBottomGap") : 0.2,
 
     materials: materialSet,
     doorSameAsBody: $("doorSameAsBody").checked,
@@ -611,7 +660,67 @@ function calculateDrawerParts(state) {
 }
 
 
+
+function calculateBoxParts(state) {
+  const parts = [];
+  const W = state.W;
+  const H = state.H;
+  const D = state.D;
+  const t = state.t;
+  const bodyMat = state.materials.body;
+
+  // 箱體模式統一採「左右側板完整高度」邏輯，讓尺寸較直覺。
+  // 板件方向仍使用：長度 x 寬度。
+  if (state.boxType === "openFront") {
+    parts.push(addPart("箱體左側板", "body", bodyMat, t, H, D, 1, "前方開口箱：側板完整高度"));
+    parts.push(addPart("箱體右側板", "body", bodyMat, t, H, D, 1, "前方開口箱：側板完整高度"));
+    parts.push(addPart("箱體頂板", "body", bodyMat, t, W - 2 * t, D, 1, "扣左右側板厚度"));
+    parts.push(addPart("箱體底板", "body", bodyMat, t, W - 2 * t, D, 1, "扣左右側板厚度"));
+    parts.push(addPart("箱體背板", "body", bodyMat, t, W - 2 * t, H - 2 * t, 1, "前方開口箱背板，扣四周板厚"));
+  }
+
+  if (state.boxType === "closed") {
+    parts.push(addPart("箱體左側板", "body", bodyMat, t, H, D, 1, "六面封閉箱：側板完整高度"));
+    parts.push(addPart("箱體右側板", "body", bodyMat, t, H, D, 1, "六面封閉箱：側板完整高度"));
+    parts.push(addPart("箱體頂板", "body", bodyMat, t, W - 2 * t, D, 1, "扣左右側板厚度"));
+    parts.push(addPart("箱體底板", "body", bodyMat, t, W - 2 * t, D, 1, "扣左右側板厚度"));
+    parts.push(addPart("箱體前板", "body", bodyMat, t, W - 2 * t, H - 2 * t, 1, "封閉箱前板，扣四周板厚"));
+    parts.push(addPart("箱體背板", "body", bodyMat, t, W - 2 * t, H - 2 * t, 1, "封閉箱背板，扣四周板厚"));
+  }
+
+  if (state.boxType === "openTop") {
+    parts.push(addPart("箱體左側板", "body", bodyMat, t, H, D, 1, "上方開口箱：側板完整高度"));
+    parts.push(addPart("箱體右側板", "body", bodyMat, t, H, D, 1, "上方開口箱：側板完整高度"));
+    parts.push(addPart("箱體前板", "body", bodyMat, t, W - 2 * t, H, 1, "上方開口箱前板，扣左右側板厚"));
+    parts.push(addPart("箱體後板", "body", bodyMat, t, W - 2 * t, H, 1, "上方開口箱後板，扣左右側板厚"));
+    parts.push(addPart("箱體底板", "body", bodyMat, t, W - 2 * t, D - 2 * t, 1, "上方開口箱底板，扣四周板厚"));
+  }
+
+  if (state.boxType === "tray") {
+    const trayH = H;
+    parts.push(addPart("托盤左側板", "body", bodyMat, t, trayH, D, 1, "淺盤側板"));
+    parts.push(addPart("托盤右側板", "body", bodyMat, t, trayH, D, 1, "淺盤側板"));
+    parts.push(addPart("托盤前板", "body", bodyMat, t, W - 2 * t, trayH, 1, "淺盤前板，扣左右側板厚"));
+    parts.push(addPart("托盤後板", "body", bodyMat, t, W - 2 * t, trayH, 1, "淺盤後板，扣左右側板厚"));
+    parts.push(addPart("托盤底板", "body", bodyMat, t, W - 2 * t, D - 2 * t, 1, "淺盤底板，扣四周板厚"));
+  }
+
+  if (state.boxHasLid) {
+    parts.push(addPart("獨立上蓋板", "body", bodyMat, t, W + 2 * state.boxLidOverlay, D + 2 * state.boxLidOverlay, 1, "獨立上蓋，含外蓋量"));
+  }
+
+  if (state.boxHasInnerBottom) {
+    parts.push(addPart("內底板", "body", bodyMat, t, W - 2 * t - 2 * state.boxInnerBottomGap, D - 2 * t - 2 * state.boxInnerBottomGap, 1, "箱體內底板，扣板厚與縮邊"));
+  }
+
+  return parts.filter(Boolean);
+}
+
 function calculateFormulaParts(state) {
+  if (state.mode === "box") {
+    return calculateBoxParts(state);
+  }
+
   const parts = [];
   const {
     W, H, D, t,
@@ -1520,6 +1629,51 @@ function animate3D() {
   if (renderer && scene && camera) renderer.render(scene, camera);
 }
 
+
+function renderBox3D(state, scale, board, mats) {
+  if (state.mode !== "box") return false;
+
+  const W = state.W * scale;
+  const H = state.H * scale;
+  const D = state.D * scale;
+  const t = state.t * scale;
+
+  const matBody = mats.body;
+  const matBack = mats.back;
+
+  // 基本左右側板
+  board("箱體左側板", t, H, D, -W / 2 + t / 2, 0, 0, matBody);
+  board("箱體右側板", t, H, D, W / 2 - t / 2, 0, 0, matBody);
+
+  if (state.boxType === "openFront" || state.boxType === "closed") {
+    board("箱體頂板", W - 2 * t, t, D, 0, H / 2 - t / 2, 0, matBody);
+    board("箱體底板", W - 2 * t, t, D, 0, -H / 2 + t / 2, 0, matBody);
+    board("箱體背板", W - 2 * t, H - 2 * t, t, 0, 0, D / 2 - t / 2, matBack);
+
+    if (state.boxType === "closed") {
+      board("箱體前板", W - 2 * t, H - 2 * t, t, 0, 0, -D / 2 + t / 2, matBack);
+    }
+  }
+
+  if (state.boxType === "openTop" || state.boxType === "tray") {
+    board("箱體前板", W - 2 * t, H, t, 0, 0, -D / 2 + t / 2, matBody);
+    board("箱體後板", W - 2 * t, H, t, 0, 0, D / 2 - t / 2, matBody);
+    board("箱體底板", W - 2 * t, t, D - 2 * t, 0, -H / 2 + t / 2, 0, matBody);
+  }
+
+  if (state.boxHasLid) {
+    const lidOverlay = state.boxLidOverlay * scale;
+    board("獨立上蓋", W + 2 * lidOverlay, t, D + 2 * lidOverlay, 0, H / 2 + t * 1.5, 0, mats.door);
+  }
+
+  if (state.boxHasInnerBottom) {
+    const gap = state.boxInnerBottomGap * scale;
+    board("內底板", W - 2 * t - 2 * gap, t * 0.7, D - 2 * t - 2 * gap, 0, -H / 2 + t * 2.2, 0, mats.shelf);
+  }
+
+  return true;
+}
+
 function render3D(state) {
   if (!cabinetGroup || !window.THREE) return;
 
@@ -1557,6 +1711,16 @@ function render3D(state) {
     const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x3a2a1f, transparent: true, opacity: 0.35 }));
     line.position.copy(mesh.position);
     cabinetGroup.add(line);
+  }
+
+  if (renderBox3D(state, scale, board, {
+    body: matBody,
+    shelf: matShelf,
+    back: matBack,
+    door: matDoor,
+  })) {
+    cabinetGroup.rotation.y = -0.25;
+    return;
   }
 
   if (state.assemblyType === "sideFull") {
@@ -1628,6 +1792,7 @@ function render3D(state) {
 
 
 function updateConditionalUI() {
+  const isBox = currentMode === "box";
   const hasBack = $("hasBack").checked;
   const hasDoor = $("doorType").value !== "none";
   const hasToeKick = $("hasToeKick").checked;
@@ -1645,9 +1810,21 @@ function updateConditionalUI() {
   toggle("doorMaterialPanel", hasDoor || hasDrawers);
   toggle("doorMaterialCustomOptions", (hasDoor || hasDrawers) && !doorSame);
   toggle("toeKickOptions", hasToeKick);
-  toggle("drawerOptions", hasDrawers);
-  toggle("drawerSideMaterialPanel", hasDrawers);
-  toggle("drawerBottomMaterialPanel", hasDrawers);
+  toggle("drawerOptions", hasDrawers && !isBox);
+  toggle("drawerSideMaterialPanel", hasDrawers && !isBox);
+  toggle("drawerBottomMaterialPanel", hasDrawers && !isBox);
+
+  toggle("boxOptions", isBox);
+  toggle("backOptions", hasBack && !isBox);
+  toggle("backMaterialPanel", hasBack && !isBox);
+  toggle("doorOptions", hasDoor && !isBox);
+  toggle("doorMaterialPanel", (hasDoor || hasDrawers) && !isBox);
+  toggle("toeKickOptions", hasToeKick && !isBox);
+
+  const cabinetOnlySelectors = ["[data-feature='back']", "[data-feature='door']", "[data-feature='toeKick']", "[data-feature='drawers']", ".hardware-panel"];
+  cabinetOnlySelectors.forEach((selector) => {
+    document.querySelectorAll(selector).forEach((el) => el.classList.toggle("is-hidden", isBox));
+  });
 
   const rowsInput = $("doorRows");
   if (rowsInput) {
@@ -1811,6 +1988,16 @@ function bindEvents() {
 
 let deferredInstallPrompt = null;
 
+
+function initMobileSectionNav() {
+  document.querySelectorAll(".mobile-section-nav [data-scroll-target]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const target = document.querySelector(btn.dataset.scrollTarget);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+}
+
 function initPWA() {
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     navigator.serviceWorker.register("./service-worker.js").catch((err) => {
@@ -1855,7 +2042,9 @@ function initPWA() {
 
 window.addEventListener("DOMContentLoaded", () => {
   initPWA();
+  initMobileSectionNav();
   initMaterialControls();
+  initModeSwitch();
   bindEvents();
   updateConditionalUI();
   init3D();

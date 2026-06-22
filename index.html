@@ -26,6 +26,26 @@
     </div>
   </header>
 
+  <section class="mode-switch" aria-label="功能模式切換">
+    <button id="cabinetModeBtn" class="mode-btn active" type="button" data-mode="cabinet">
+      <strong>櫃體模式</strong>
+      <span>門片、層板、抽屜、五金</span>
+    </button>
+    <button id="boxModeBtn" class="mode-btn" type="button" data-mode="box">
+      <strong>箱體模式</strong>
+      <span>木箱、收納箱、道具箱、機關箱</span>
+    </button>
+  </section>
+
+
+  <nav class="mobile-section-nav" aria-label="手機快速導覽">
+    <button type="button" data-scroll-target=".controls">尺寸</button>
+    <button type="button" data-scroll-target=".viewer">3D</button>
+    <button type="button" data-scroll-target=".estimate">估算</button>
+    <button type="button" data-scroll-target=".layout-plan">排版</button>
+    <button type="button" data-scroll-target=".cutlist">裁切</button>
+  </nav>
+
   <main class="layout">
     <aside class="panel controls">
       <h2>櫃體參數</h2>
@@ -67,6 +87,45 @@
             </select>
           </label>
         </div>
+      </section>
+
+      <section id="boxOptions" class="form-section feature-section">
+        <h3>箱體設定</h3>
+        <div class="grid-2">
+          <label>箱體形式
+            <select id="boxType">
+              <option value="openFront" selected>前方開口箱</option>
+              <option value="closed">六面封閉箱</option>
+              <option value="openTop">上方開口箱</option>
+              <option value="tray">淺盤 / 托盤</option>
+            </select>
+          </label>
+          <label>箱體用途
+            <select id="boxUse">
+              <option value="prop" selected>道具 / 機關箱</option>
+              <option value="storage">收納箱</option>
+              <option value="display">展示箱</option>
+              <option value="transport">搬運箱</option>
+            </select>
+          </label>
+          <label class="checkline">
+            <input id="boxHasLid" type="checkbox">
+            需要獨立上蓋
+          </label>
+          <label class="checkline">
+            <input id="boxHasInnerBottom" type="checkbox">
+            需要內底板
+          </label>
+          <label>上蓋外蓋量（cm）
+            <input id="boxLidOverlay" type="number" value="1" min="0" step="0.1">
+          </label>
+          <label>內底板縮邊（cm）
+            <input id="boxInnerBottomGap" type="number" value="0.2" min="0" step="0.1">
+          </label>
+        </div>
+        <p class="material-use">
+          箱體模式會使用「主結構板材」計算側板、頂底板、前後板；若需要薄背板或內底板，可用自訂板件或下一版擴充箱體分材。
+        </p>
       </section>
 
       <section class="form-section">
@@ -483,9 +542,9 @@
   </main>
 
   <nav class="mobile-bottom-bar">
-    <button id="mobileRecalcBtn" class="primary">重算</button>
+    <button id="mobileRecalcBtn" class="primary">重新計算</button>
     <button id="mobileSaveBtn" class="secondary">儲存</button>
-    <button id="mobileExportBtn" class="secondary">CSV</button>
+    <button id="mobileExportBtn" class="secondary">匯出</button>
     <button id="mobileTopBtn" class="secondary">回頂部</button>
   </nav>
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "wood-cabinet-tool-v1-9";
+const CACHE_NAME = "wood-cabinet-tool-v2-1";
 const ASSETS = [
   "./",
   "./index.html",
