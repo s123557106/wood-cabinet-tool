@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>台灣木工櫃體 3D 裁切計算工具 MVP v1.3</title>
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#2a2119" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="櫃體計算" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>台灣木工櫃體 3D 裁切計算工具</h1>
+      <p>本機版 MVP v1.3｜單位：cm｜分段門片｜抽屜模組｜五金估算｜自動板材排版</p>
+    </div>
+    <div class="header-actions">
+      <button id="installBtn" class="secondary is-hidden">安裝到手機</button>
+      <button id="saveBtn" class="secondary">儲存方案</button>
+      <button id="loadBtn" class="secondary">載入方案</button>
+      <button id="resetBtn" class="danger">重設</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel controls">
+      <h2>櫃體參數</h2>
+
+      <section class="form-section">
+        <h3>外尺寸</h3>
+        <div class="grid-2">
+          <label>外寬 W（cm）
+            <input id="cabinetW" type="number" value="80" min="0.1" step="0.1">
+          </label>
+          <label>外高 H（cm）
+            <input id="cabinetH" type="number" value="120" min="0.1" step="0.1">
+          </label>
+          <label>外深 D（cm）
+            <input id="cabinetD" type="number" value="40" min="0.1" step="0.1">
+          </label>
+          <label>主結構板厚 t（cm）
+            <input id="boardT" type="number" value="1.8" min="0.1" step="0.01">
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h3>結構</h3>
+        <label>組裝方式
+          <select id="assemblyType">
+            <option value="sideFull">左右側板落地，頂底板夾左右側板</option>
+            <option value="topBottomWrap">頂底板包左右側板</option>
+          </select>
+        </label>
+        <div class="grid-2">
+          <label>層板數量
+            <input id="shelfCount" type="number" value="2" min="0" step="1">
+          </label>
+          <label>層板形式
+            <select id="shelfType">
+              <option value="adjustable">活動層板</option>
+              <option value="fixed">固定層板</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h3>背板</h3>
+        <label class="checkline">
+          <input id="hasBack" type="checkbox" checked>
+          需要背板
+        </label>
+        <div class="grid-2">
+          <label>背板厚度（cm）
+            <input id="backT" type="number" value="0.3" min="0.1" step="0.01">
+          </label>
+          <label>背板形式
+            <select id="backType">
+              <option value="external">外貼背板</option>
+              <option value="inset">內嵌背板</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h3>門片</h3>
+        <div class="grid-2">
+          <label>門片
+            <select id="doorType">
+              <option value="none">無門片</option>
+              <option value="single">單門</option>
+              <option value="double" selected>雙門</option>
+            </select>
+          </label>
+          <label>門片形式
+            <select id="doorStyle">
+              <option value="overlay" selected>外蓋門</option>
+              <option value="inset">內嵌門</option>
+            </select>
+          </label>
+          <label>門片配置
+            <select id="doorLayout">
+              <option value="full" selected>整面門片</option>
+              <option value="byShelves">依層板自動分段</option>
+              <option value="customRows">自訂門片列數</option>
+            </select>
+          </label>
+          <label>自訂門片列數
+            <input id="doorRows" type="number" value="3" min="1" step="1">
+          </label>
+          <label>門片厚度（cm）
+            <input id="doorT" type="number" value="1.8" min="0.1" step="0.01">
+          </label>
+          <label>門縫 gap（cm）
+            <input id="gap" type="number" value="0.2" min="0" step="0.05">
+          </label>
+          <label>外蓋量 overlay（cm）
+            <input id="overlay" type="number" value="1.5" min="0" step="0.1">
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h3>踢腳板</h3>
+        <label class="checkline">
+          <input id="hasToeKick" type="checkbox">
+          需要踢腳板
+        </label>
+        <div class="grid-2">
+          <label>踢腳高度（cm）
+            <input id="toeKickH" type="number" value="8" min="0" step="0.1">
+          </label>
+          <label>踢腳內縮（cm）
+            <input id="toeKickInset" type="number" value="5" min="0" step="0.1">
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h3>抽屜模組</h3>
+        <label class="checkline">
+          <input id="hasDrawers" type="checkbox">
+          需要抽屜
+        </label>
+        <div class="grid-2">
+          <label>抽屜數量
+            <input id="drawerCount" type="number" value="3" min="1" step="1">
+          </label>
+          <label>抽屜面板形式
+            <select id="drawerFrontStyle">
+              <option value="overlay" selected>外蓋面板</option>
+              <option value="inset">內嵌面板</option>
+            </select>
+          </label>
+          <label>抽屜面板板材
+            <select id="drawerFrontMaterialRole">
+              <option value="door" selected>使用門片板材</option>
+              <option value="body">使用主結構板材</option>
+              <option value="back">使用背板板材</option>
+            </select>
+          </label>
+          <label>抽屜前後板板材
+            <select id="drawerFrontBackMaterialRole">
+              <option value="sameAsSide" selected>同抽屜側板板材</option>
+              <option value="back">使用背板板材</option>
+              <option value="body">使用主結構板材</option>
+              <option value="door">使用門片板材</option>
+            </select>
+          </label>
+          <div class="drawer-material-note">
+            抽屜側板與抽屜底板改到右側「板材設定」獨立選擇，厚度會自動跟隨板材，不再手動輸入，避免木心板卻顯示錯誤厚度。
+          </div>
+          <label>抽屜箱側板高度（cm）
+            <input id="drawerBoxH" type="number" value="12" min="1" step="0.1">
+          </label>
+          <label>抽屜後方預留（cm）
+            <input id="drawerBackClearance" type="number" value="3" min="0" step="0.1">
+          </label>
+        </div>
+        <p class="material-use">抽屜目前以單欄滿寬抽屜估算；側板與底板可在右側獨立選擇板材，厚度會自動帶入。若同時啟用門片與抽屜，系統會同時計算兩者，實際配置需自行確認。</p>
+      </section>
+
+      <button id="recalcBtn" class="primary full">重新計算</button>
+    </aside>
+
+    <section class="panel viewer">
+      <div class="panel-title-row">
+        <div>
+          <h2>3D 櫃體示意</h2>
+          <p id="dimensionText">外尺寸：80 × 120 × 40 cm</p>
+        </div>
+        <span class="hint">滑鼠拖曳旋轉｜滾輪縮放</span>
+      </div>
+      <div id="threeWrap">
+        <div id="threeFallback" class="fallback hidden">
+          無法載入 Three.js。若你是離線使用，3D 預覽需要網路載入 CDN；裁切計算與排版示意仍可正常使用。
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel estimate">
+      <h2>板材設定與總估算</h2>
+
+      <section class="form-section material-panel">
+        <h3>主結構板材</h3>
+        <label>板材類型
+          <select id="bodyMaterialType" data-role="body" data-kind="type"></select>
+        </label>
+        <label>常用厚度
+          <select id="bodyMaterialSpec" data-role="body" data-kind="spec"></select>
+        </label>
+        <p id="bodyUseText" class="material-use"></p>
+        <div class="grid-2">
+          <label>原板尺寸
+            <select id="bodySheetPreset" data-role="body" data-kind="sheetPreset"></select>
+          </label>
+          <label>單張價格 NT$
+            <input id="bodySheetPrice" type="number" value="1700" min="0" step="10">
+          </label>
+          <label>原板長度（cm）
+            <input id="bodySheetL" type="number" value="244" min="0.1" step="0.1">
+          </label>
+          <label>原板寬度（cm）
+            <input id="bodySheetW" type="number" value="122" min="0.1" step="0.1">
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section material-panel">
+        <h3>背板板材</h3>
+        <label>板材類型
+          <select id="backMaterialType" data-role="back" data-kind="type"></select>
+        </label>
+        <label>常用厚度
+          <select id="backMaterialSpec" data-role="back" data-kind="spec"></select>
+        </label>
+        <p id="backUseText" class="material-use"></p>
+        <div class="grid-2">
+          <label>原板尺寸
+            <select id="backSheetPreset" data-role="back" data-kind="sheetPreset"></select>
+          </label>
+          <label>單張價格 NT$
+            <input id="backSheetPrice" type="number" value="450" min="0" step="10">
+          </label>
+          <label>原板長度（cm）
+            <input id="backSheetL" type="number" value="244" min="0.1" step="0.1">
+          </label>
+          <label>原板寬度（cm）
+            <input id="backSheetW" type="number" value="122" min="0.1" step="0.1">
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section material-panel">
+        <h3>門片板材</h3>
+        <label class="checkline">
+          <input id="doorSameAsBody" type="checkbox" checked>
+          門片使用主結構板材
+        </label>
+        <label>板材類型
+          <select id="doorMaterialType" data-role="door" data-kind="type"></select>
+        </label>
+        <label>常用厚度
+          <select id="doorMaterialSpec" data-role="door" data-kind="spec"></select>
+        </label>
+        <p id="doorUseText" class="material-use"></p>
+        <div class="grid-2">
+          <label>原板尺寸
+            <select id="doorSheetPreset" data-role="door" data-kind="sheetPreset"></select>
+          </label>
+          <label>單張價格 NT$
+            <input id="doorSheetPrice" type="number" value="1700" min="0" step="10">
+          </label>
+          <label>原板長度（cm）
+            <input id="doorSheetL" type="number" value="244" min="0.1" step="0.1">
+          </label>
+          <label>原板寬度（cm）
+            <input id="doorSheetW" type="number" value="122" min="0.1" step="0.1">
+          </label>
+        </div>
+      </section>
+
+      <section id="drawerSideMaterialPanel" class="form-section material-panel compact-card">
+        <h3>抽屜側板板材</h3>
+        <label>板材類型
+          <select id="drawerSideMaterialType" data-role="drawerSide" data-kind="type"></select>
+        </label>
+        <label>常用厚度
+          <select id="drawerSideMaterialSpec" data-role="drawerSide" data-kind="spec"></select>
+        </label>
+        <p id="drawerSideUseText" class="material-use"></p>
+        <div class="grid-2">
+          <label>原板尺寸
+            <select id="drawerSideSheetPreset" data-role="drawerSide" data-kind="sheetPreset"></select>
+          </label>
+          <label>單張價格 NT$
+            <input id="drawerSideSheetPrice" type="number" value="900" min="0" step="10">
+          </label>
+          <label>原板長度（cm）
+            <input id="drawerSideSheetL" type="number" value="244" min="0.1" step="0.1">
+          </label>
+          <label>原板寬度（cm）
+            <input id="drawerSideSheetW" type="number" value="122" min="0.1" step="0.1">
+          </label>
+        </div>
+      </section>
+
+      <section id="drawerBottomMaterialPanel" class="form-section material-panel compact-card">
+        <h3>抽屜底板板材</h3>
+        <label>板材類型
+          <select id="drawerBottomMaterialType" data-role="drawerBottom" data-kind="type"></select>
+        </label>
+        <label>常用厚度
+          <select id="drawerBottomMaterialSpec" data-role="drawerBottom" data-kind="spec"></select>
+        </label>
+        <p id="drawerBottomUseText" class="material-use"></p>
+        <div class="grid-2">
+          <label>原板尺寸
+            <select id="drawerBottomSheetPreset" data-role="drawerBottom" data-kind="sheetPreset"></select>
+          </label>
+          <label>單張價格 NT$
+            <input id="drawerBottomSheetPrice" type="number" value="450" min="0" step="10">
+          </label>
+          <label>原板長度（cm）
+            <input id="drawerBottomSheetL" type="number" value="244" min="0.1" step="0.1">
+          </label>
+          <label>原板寬度（cm）
+            <input id="drawerBottomSheetW" type="number" value="122" min="0.1" step="0.1">
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section hardware-panel compact-card">
+        <div class="panel-title-row mini-title-row">
+          <div>
+            <h3>五金推薦與估算</h3>
+            <p id="hardwareHint" class="mini-muted">選擇門片或抽屜後，系統會自動推薦必要五金。</p>
+          </div>
+        </div>
+
+        <div id="hardwareQuickSummary" class="hardware-quick-summary"></div>
+
+        <div class="hardware-card" id="hingeCard">
+          <label class="checkline hardware-toggle">
+            <input id="hingeEnabled" type="checkbox">
+            <strong>估算鉸鍊</strong>
+          </label>
+          <p id="hingeRecommend" class="hardware-recommend">選擇門片後會自動推薦鉸鍊數量。</p>
+          <div id="hingeOptions" class="conditional-options hardware-options">
+            <div class="grid-2">
+              <label>鉸鍊類型
+                <select id="hingeType"></select>
+              </label>
+              <label>單顆鉸鍊價格 NT$
+                <input id="hingePrice" type="number" value="80" min="0" step="5">
+              </label>
+              <label class="checkline">
+                <input id="hingeAuto" type="checkbox" checked>
+                依門高自動估鉸鍊數
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="hardware-card" id="slideCard">
+          <label class="checkline hardware-toggle">
+            <input id="slideEnabled" type="checkbox">
+            <strong>估算抽屜滑軌</strong>
+          </label>
+          <p id="slideRecommend" class="hardware-recommend">勾選抽屜後會自動推薦滑軌組數。</p>
+          <div id="slideOptions" class="conditional-options hardware-options">
+            <div class="grid-2">
+              <label>滑軌類型
+                <select id="slideType"></select>
+              </label>
+              <label>滑軌長度（cm）
+                <select id="slideLength"></select>
+              </label>
+              <label>每組滑軌價格 NT$
+                <input id="slidePrice" type="number" value="250" min="0" step="10">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <details class="optional-hardware">
+          <summary>選配五金</summary>
+          <div class="optional-hardware-body">
+            <label class="checkline">
+              <input id="handleEnabled" type="checkbox">
+              估算把手 / 取手
+            </label>
+            <div id="handleOptions" class="conditional-options hardware-options">
+              <label>單個把手價格 NT$
+                <input id="handlePrice" type="number" value="60" min="0" step="5">
+              </label>
+            </div>
+
+            <label class="checkline">
+              <input id="shelfPinEnabled" type="checkbox">
+              活動層板粒
+            </label>
+            <div id="shelfPinOptions" class="conditional-options hardware-options">
+              <label>單顆層板粒價格 NT$
+                <input id="shelfPinPrice" type="number" value="5" min="0" step="1">
+              </label>
+            </div>
+          </div>
+        </details>
+
+        <div id="hardwareSummary" class="hardware-summary"></div>
+      </section>
+
+      <div class="summary-card">
+        <div><span>需要板材</span><strong id="totalSheets">0 張</strong></div>
+        <div><span>總利用率</span><strong id="totalUtilization">0%</strong></div>
+        <div><span>估計板材成本</span><strong id="totalCost">NT$0</strong></div>
+        <div><span>估計五金成本</span><strong id="hardwareCost">NT$0</strong></div>
+        <div><span>估計總成本</span><strong id="projectCost">NT$0</strong></div>
+      </div>
+
+      <p class="notice">
+        目前排版使用「簡易矩形排版」：會依不同板材、厚度、原板尺寸分組排版，但尚非最佳化 nesting。實際裁切仍需確認木紋方向、鋸路、封邊與師傅裁切習慣。
+      </p>
+
+      <div id="warnings" class="warnings"></div>
+
+      <div class="action-stack">
+        <button id="exportCsvBtn" class="secondary full">匯出 CSV 裁切清單</button>
+        <button id="copyBtn" class="secondary full">一鍵複製裁切清單</button>
+        <button id="printBtn" class="secondary full">列印 / 另存 PDF</button>
+      </div>
+    </aside>
+
+    <section class="panel layout-plan">
+      <div class="panel-title-row">
+        <div>
+          <h2>板材區域規劃圖</h2>
+          <p>依不同板材自動分組；每個板件區塊會顯示編號，圖下方也會列出對照清單，避免小板件看不出用途。</p>
+        </div>
+      </div>
+      <div id="layoutSummary" class="layout-summary"></div>
+      <div id="hardwareDetails" class="hardware-details"></div>
+      <div id="sheetLayouts" class="sheet-layouts"></div>
+    </section>
+
+    <section class="panel cutlist">
+      <div class="panel-title-row">
+        <div>
+          <h2>裁切清單</h2>
+          <p>公式板件可修改材質與備註；自訂板件可修改尺寸。紅色提示代表可能超過單張原板尺寸。</p>
+        </div>
+        <button id="addPartBtn" class="secondary">新增自訂板件</button>
+      </div>
+
+      <div class="table-wrap">
+        <table id="cutTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>板件名稱</th>
+              <th>分組</th>
+              <th>板材</th>
+              <th>厚度 cm</th>
+              <th>長度 cm</th>
+              <th>寬度 cm</th>
+              <th>數量</th>
+              <th>面積 m²</th>
+              <th>備註</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <nav class="mobile-bottom-bar">
+    <button id="mobileRecalcBtn" class="primary">重算</button>
+    <button id="mobileSaveBtn" class="secondary">儲存</button>
+    <button id="mobileExportBtn" class="secondary">CSV</button>
+    <button id="mobileTopBtn" class="secondary">回頂部</button>
+  </nav>
+
+  <footer class="app-footer">
+    <strong>版本：</strong> A 方案 MVP v1.3｜分段門片 + 抽屜五金版　
+    <strong>目前限制：</strong> 尚未做最佳化 nesting、鋸路厚度、木紋方向強制限制、封邊精算、CNC 輸出。
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
