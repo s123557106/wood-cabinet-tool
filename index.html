@@ -68,7 +68,7 @@
         </div>
       </section>
 
-      <section class="form-section">
+      <section id="structureSection" class="form-section cabinet-config-only">
         <h3>結構</h3>
         <label>組裝方式
           <select id="assemblyType">
@@ -108,10 +108,10 @@
         <div class="grid-2">
           <label>箱體形式
             <select id="boxType">
-              <option value="openFront" selected>前方開口箱</option>
-              <option value="closed">六面封閉箱</option>
-              <option value="openTop">上方開口箱</option>
-              <option value="tray">淺盤 / 托盤</option>
+              <option value="openFront" selected>前方開口箱｜五片式</option>
+              <option value="closed">六面封閉箱｜六片式</option>
+              <option value="openTop">上方開口箱｜無上蓋</option>
+              <option value="tray">淺盤 / 托盤｜底板外露、四邊矮牆</option>
             </select>
           </label>
           <label>箱體用途
@@ -121,6 +121,23 @@
               <option value="display">展示箱</option>
               <option value="transport">搬運箱</option>
             </select>
+          </label>
+          <label>前板模式
+            <select id="boxFrontPanelMode">
+              <option value="none" selected>不使用前板 / 前方開口</option>
+              <option value="inset">內崁前板</option>
+              <option value="overlay">外蓋前板</option>
+            </select>
+          </label>
+          <label>後板模式
+            <select id="boxBackPanelMode">
+              <option value="none">不使用後板</option>
+              <option value="inset" selected>內崁後板</option>
+              <option value="overlay">外蓋後板</option>
+            </select>
+          </label>
+          <label>前後板外蓋量（cm）
+            <input id="boxEndOverlay" type="number" value="1" min="0" step="0.1">
           </label>
           <label class="checkline">
             <input id="boxHasLid" type="checkbox">
@@ -137,8 +154,8 @@
             <input id="boxInnerBottomGap" type="number" value="0.2" min="0" step="0.1">
           </label>
         </div>
-        <p class="material-use">
-          箱體模式會使用「主結構板材」計算側板、頂底板、前後板；若需要薄背板或內底板，可用自訂板件或下一版擴充箱體分材。
+        <p id="boxTypeSummary" class="material-use">
+          箱體模式會自動收合櫃體專用設定；前板與後板可分別選擇不使用、內崁或外蓋。
         </p>
       </section>
 

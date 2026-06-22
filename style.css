@@ -1445,3 +1445,93 @@ body.cabinet-mode .box-only {
   font-size: 12px;
   margin-left: 4px;
 }
+
+
+/* v2.6 箱體模式介面整理 */
+body.box-mode #structureSection,
+body.box-mode [data-feature="back"],
+body.box-mode [data-feature="door"],
+body.box-mode [data-feature="toeKick"],
+body.box-mode [data-feature="drawers"],
+body.box-mode #backMaterialPanel,
+body.box-mode #doorMaterialPanel,
+body.box-mode #drawerSideMaterialPanel,
+body.box-mode #drawerBottomMaterialPanel,
+body.box-mode .hardware-panel {
+  display: none !important;
+}
+
+body.box-mode #boxOptions {
+  display: block !important;
+}
+
+body.cabinet-mode #boxOptions {
+  display: none !important;
+}
+
+body.box-mode .mode-switch {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 760px) {
+  body.box-mode #boxOptions {
+    padding: 14px;
+  }
+}
+
+
+/* v2.7 箱體模式強制收合修正 */
+body.box-mode .cabinet-only-section,
+body.box-mode #structureSection,
+body.box-mode #backSection,
+body.box-mode #doorSection,
+body.box-mode #toeKickSection,
+body.box-mode #drawerSection,
+body.box-mode #backMaterialPanel,
+body.box-mode #doorMaterialPanel,
+body.box-mode #drawerSideMaterialPanel,
+body.box-mode #drawerBottomMaterialPanel,
+body.box-mode .hardware-panel {
+  display: none !important;
+}
+
+body.box-mode #boxOptions {
+  display: block !important;
+}
+
+body.cabinet-mode #boxOptions {
+  display: none !important;
+}
+
+
+/* v2.8 箱體模式收合除錯：由 JS 加上 .box-hidden-section 後強制隱藏 */
+body.box-mode .box-hidden-section {
+  display: none !important;
+}
+
+body.box-mode #boxOptions {
+  display: block !important;
+}
+
+body.cabinet-mode #boxOptions {
+  display: none !important;
+}
+
+
+/* v2.9 箱體前後板配置 */
+.box-panel-summary {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #d8d2c5;
+  background: #fffdf8;
+  color: #526070;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+  body.box-mode #boxOptions .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
