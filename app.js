@@ -1,4 +1,4 @@
-// 台灣木工櫃體 3D 裁切計算工具 MVP v2.9
+// 台灣木工櫃體 3D 裁切計算工具 MVP v3.1
 // 單位：cm
 // 重點：多板材分組、裁切清單、簡易矩形排版、成本與利用率、3D 示意
 
@@ -6,6 +6,7 @@ const $ = (id) => document.getElementById(id);
 
 const materialNames = {
   plywood: "夾板",
+  yifengPlywood: "藝豐合板",
   blockboard: "木心板",
   mdf: "MDF",
   particle: "系統板 / 塑合板",
@@ -27,20 +28,28 @@ const roleNames = {
 
 const materialSpecs = {
   plywood: [
-    { label: "1分夾板｜0.3 cm｜抽屜底板", thickness: 0.3, use: "抽屜底板" },
-    { label: "1.2分夾板｜0.35 cm｜隔間薄板、抽屜底板", thickness: 0.35, use: "隔間薄板、抽屜底板" },
-    { label: "2分夾板｜0.42 cm｜隔間薄板、抽屜底板", thickness: 0.42, use: "隔間薄板、抽屜底板" },
-    { label: "2分足夾板｜0.5 cm｜抽屜底板", thickness: 0.5, use: "抽屜底板" },
-    { label: "3分夾板｜0.7 cm｜裝潢、家具轉角處", thickness: 0.7, use: "裝潢、家具轉角處" },
-    { label: "3分足夾板｜0.8 cm｜床底板", thickness: 0.8, use: "床底板" },
-    { label: "3分足夾板｜0.9 cm｜床底板", thickness: 0.9, use: "床底板" },
-    { label: "4分夾板｜0.9 cm｜床底板", thickness: 0.9, use: "床底板" },
-    { label: "4分足夾板｜1.1 cm｜木地板底板", thickness: 1.1, use: "木地板底板" },
-    { label: "4分足夾板｜1.2 cm｜木地板底板", thickness: 1.2, use: "木地板底板" },
-    { label: "5分夾板｜1.3 cm｜較少使用", thickness: 1.3, use: "較少使用" },
-    { label: "5分足夾板｜1.5 cm｜支撐結構", thickness: 1.5, use: "支撐結構" },
-    { label: "6分夾板｜1.6 cm｜支撐結構", thickness: 1.6, use: "支撐結構" },
-    { label: "6分足夾板｜1.8 cm｜支撐結構", thickness: 1.8, use: "支撐結構" },
+    { label: "1分夾板｜0.27 cm", thickness: 0.27, use: "薄背板 / 抽屜底板", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "2分夾板｜0.36 cm", thickness: 0.36, use: "抽屜底板 / 薄隔板", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "2分足夾板｜0.5 cm", thickness: 0.5, use: "抽屜底板 / 輕隔板", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "7mm夾板｜0.7 cm", thickness: 0.7, use: "背板 / 輕隔板 / 飾板", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "3分夾板｜0.9 cm", thickness: 0.9, use: "背板 / 底板 / 輕結構", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "4分夾板｜1.2 cm", thickness: 1.2, use: "箱體 / 抽屜側板 / 層板", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "5分夾板｜1.5 cm", thickness: 1.5, use: "支撐結構 / 箱體", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "6分夾板｜1.8 cm", thickness: 1.8, use: "支撐結構 / 箱體 / 層板", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "7分夾板｜2.1 cm", thickness: 2.1, use: "厚板 / 承重結構", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "8分夾板｜2.4 cm", thickness: 2.4, use: "厚板 / 承重結構", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+  ],
+  yifengPlywood: [
+    { label: "藝豐合板 0.18 cm", thickness: 0.18, use: "薄底板 / 飾面 / 輕量背板", sheetIds: ["91.5x183"] },
+    { label: "藝豐合板 0.24 cm", thickness: 0.24, use: "薄底板 / 飾面 / 輕量背板", sheetIds: ["91.5x183"] },
+    { label: "藝豐合板 0.27 cm", thickness: 0.27, use: "薄背板 / 抽屜底板", sheetIds: ["91.5x213.5", "122x244"] },
+    { label: "藝豐合板 0.36 cm", thickness: 0.36, use: "抽屜底板 / 薄背板", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "藝豐合板 0.5 cm", thickness: 0.5, use: "抽屜底板 / 輕隔板", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "藝豐合板 0.7 cm", thickness: 0.7, use: "背板 / 輕隔板 / 飾板", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "藝豐合板 0.9 cm", thickness: 0.9, use: "床底板 / 背板 / 輕結構", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "藝豐合板 1.2 cm", thickness: 1.2, use: "抽屜側板 / 箱體 / 輕結構", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "藝豐合板 1.5 cm", thickness: 1.5, use: "支撐結構 / 箱體", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
+    { label: "藝豐合板 1.8 cm", thickness: 1.8, use: "支撐結構 / 箱體 / 層板", sheetIds: ["91.5x183", "91.5x213.5", "122x244"] },
   ],
   blockboard: [
     { label: "5分木心板｜1.55 cm｜床架、衣櫃、書櫃", thickness: 1.55, use: "床架、衣櫃、書櫃" },
@@ -73,8 +82,9 @@ const materialSpecs = {
 };
 
 const sheetPresets = {
-  "122x244": { label: "4尺 × 8尺｜122 × 244 cm", sheetW: 122, sheetL: 244 },
   "91.5x183": { label: "3尺 × 6尺｜91.5 × 183 cm", sheetW: 91.5, sheetL: 183 },
+  "91.5x213.5": { label: "3尺 × 7尺｜91.5 × 213.5 cm", sheetW: 91.5, sheetL: 213.5 },
+  "122x244": { label: "4尺 × 8尺｜122 × 244 cm", sheetW: 122, sheetL: 244 },
   "122x274.5": { label: "4尺 × 9尺｜122 × 274.5 cm", sheetW: 122, sheetL: 274.5 },
   custom: { label: "自訂", sheetW: 122, sheetL: 244 },
 };
@@ -255,6 +265,7 @@ function updateSpecUseText(role, applyThickness = false) {
   }
 
   text.textContent = `常見用途：${selected.use}。選擇後會自動帶入 ${selected.thickness} cm，仍可手動修改。`;
+  refreshSheetOptionsForSpec(role);
 }
 
 function syncDoorFromBody() {
@@ -552,6 +563,128 @@ function initModeSwitch() {
   });
 
   setToolMode(currentMode);
+}
+
+
+function refreshSheetOptionsForSpec(role) {
+  const specEl = $(`${role}MaterialSpec`);
+  const sheetEl = $(`${role}SheetPreset`);
+  if (!specEl || !sheetEl) return;
+
+  const type = $(`${role}MaterialType`).value;
+  const spec = materialSpecs[type]?.[Number(specEl.value)];
+  const allIds = Object.keys(sheetPresets);
+  const allowedIds = spec?.sheetIds && spec.sheetIds.length
+    ? [...spec.sheetIds, "custom"]
+    : allIds;
+
+  const current = sheetEl.value;
+  sheetEl.innerHTML = allIds
+    .filter(id => allowedIds.includes(id))
+    .map(id => `<option value="${id}">${escapeHtml(sheetPresets[id].label)}</option>`)
+    .join("");
+
+  if (allowedIds.includes(current)) {
+    sheetEl.value = current;
+  } else {
+    sheetEl.value = allowedIds.find(id => id !== "custom") || "custom";
+    syncSheetPreset(role);
+  }
+}
+
+function getMaterialQuickOptions(role) {
+  const options = [];
+
+  Object.entries(materialSpecs).forEach(([type, specs]) => {
+    specs.forEach((spec, specIndex) => {
+      const sheetIds = spec.sheetIds && spec.sheetIds.length
+        ? spec.sheetIds
+        : Object.keys(sheetPresets).filter(id => id !== "custom");
+
+      sheetIds.forEach((sheetId) => {
+        const sheet = sheetPresets[sheetId];
+        if (!sheet) return;
+        const sheetShort = sheet.label.split("｜")[0].trim();
+        options.push({
+          value: `${type}|${specIndex}|${sheetId}`,
+          label: `${materialNames[type] || type}｜${spec.label}｜${sheetShort}`,
+          type,
+          specIndex,
+          sheetId,
+        });
+      });
+    });
+  });
+
+  return options;
+}
+
+function populateQuickMaterialSelect(role) {
+  const select = role === "back" ? $("backQuickMaterial") : $("doorQuickMaterial");
+  if (!select) return;
+  const current = select.value;
+  const options = getMaterialQuickOptions(role);
+  select.innerHTML = options.map(o => `<option value="${o.value}">${escapeHtml(o.label)}</option>`).join("");
+  if (current && options.some(o => o.value === current)) {
+    select.value = current;
+    return;
+  }
+  if (role === "back") {
+    const preferred = options.find(o => o.type === "plywood" && /1分夾板|0\.3/.test(o.label) && o.sheetId === "91.5x183")
+      || options.find(o => o.type === "plywood" && o.sheetId === "91.5x183")
+      || options[0];
+    if (preferred) select.value = preferred.value;
+  } else {
+    const preferred = options.find(o => o.type === "blockboard")
+      || options.find(o => o.type === "plywood" && /1\.8 cm/.test(o.label) && o.sheetId === "122x244")
+      || options[0];
+    if (preferred) select.value = preferred.value;
+  }
+}
+
+function applyQuickMaterial(role) {
+  const select = role === "back" ? $("backQuickMaterial") : $("doorQuickMaterial");
+  if (!select || !select.value) return;
+  const [type, specIndexRaw, sheetId] = select.value.split("|");
+  const specIndex = Number(specIndexRaw);
+  const typeEl = $(`${role}MaterialType`);
+  const sheetEl = $(`${role}SheetPreset`);
+  if (!typeEl || !sheetEl) return;
+  typeEl.value = type;
+  populateSpecs(role, specIndex, true);
+  sheetEl.value = sheetId;
+  syncSheetPreset(role);
+}
+
+function syncQuickMaterialFromRight(role) {
+  const select = role === "back" ? $("backQuickMaterial") : $("doorQuickMaterial");
+  if (!select) return;
+  const typeEl = $(`${role}MaterialType`);
+  const specEl = $(`${role}MaterialSpec`);
+  const sheetEl = $(`${role}SheetPreset`);
+  if (!typeEl || !specEl || !sheetEl) return;
+  const value = `${typeEl.value}|${specEl.value}|${sheetEl.value}`;
+  if ([...select.options].some(o => o.value === value)) select.value = value;
+}
+
+function initQuickMaterialControls() {
+  populateQuickMaterialSelect("back");
+  populateQuickMaterialSelect("door");
+  applyQuickMaterial("back");
+  syncQuickMaterialFromRight("door");
+
+  const backQuick = $("backQuickMaterial");
+  if (backQuick) backQuick.addEventListener("change", () => {
+    applyQuickMaterial("back");
+    renderAll();
+  });
+
+  const doorQuick = $("doorQuickMaterial");
+  if (doorQuick) doorQuick.addEventListener("change", () => {
+    if ($("doorSameAsBody")) $("doorSameAsBody").checked = false;
+    applyQuickMaterial("door");
+    renderAll();
+  });
 }
 
 function getState() {
@@ -2675,19 +2808,29 @@ function bindEvents() {
 
       if (kind === "type") {
         populateSpecs(role, 0, true);
+        if (role === "back" || role === "door") syncQuickMaterialFromRight(role);
       }
 
       if (kind === "spec") {
         updateSpecUseText(role, true);
+        if (role === "back" || role === "door") syncQuickMaterialFromRight(role);
       }
 
       if (kind === "sheetPreset") {
         syncSheetPreset(role);
+        if (role === "back" || role === "door") syncQuickMaterialFromRight(role);
       }
 
       if (["bodySheetW", "bodySheetL"].includes(el.id)) $("bodySheetPreset").value = "custom";
       if (["backSheetW", "backSheetL"].includes(el.id)) $("backSheetPreset").value = "custom";
       if (["doorSheetW", "doorSheetL"].includes(el.id)) $("doorSheetPreset").value = "custom";
+
+      if (["backMaterialType", "backMaterialSpec", "backSheetPreset"].includes(el.id)) {
+        syncQuickMaterialFromRight("back");
+      }
+      if (["doorMaterialType", "doorMaterialSpec", "doorSheetPreset"].includes(el.id)) {
+        syncQuickMaterialFromRight("door");
+      }
       if (["drawerSideSheetW", "drawerSideSheetL"].includes(el.id)) $("drawerSideSheetPreset").value = "custom";
       if (["drawerBottomSheetW", "drawerBottomSheetL"].includes(el.id)) $("drawerBottomSheetPreset").value = "custom";
 
@@ -2799,6 +2942,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initPWA();
   initMobileSectionNav();
   initMaterialControls();
+  initQuickMaterialControls();
   initModeSwitch();
   bindEvents();
   updateConditionalUI();

@@ -1535,3 +1535,17 @@ body.cabinet-mode #boxOptions {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* v3.0 左側快速選材 */
+#backQuickMaterial,
+#doorQuickMaterial {
+  background: #fffdf8;
+}
+
+.quick-material-note {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+}
