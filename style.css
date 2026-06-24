@@ -1549,3 +1549,30 @@ body.cabinet-mode #boxOptions {
   color: var(--muted);
   line-height: 1.45;
 }
+
+
+/* v3.2 內尺寸輸入與自動收合 */
+.size-mode-summary {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+}
+
+.inner-size-field.is-hidden,
+.outer-size-field.is-hidden {
+  display: none !important;
+}
+
+body.hide-unused-right #backMaterialPanel.is-auto-hidden,
+body.hide-unused-right #doorMaterialPanel.is-auto-hidden,
+body.hide-unused-right #drawerSideMaterialPanel.is-auto-hidden,
+body.hide-unused-right #drawerBottomMaterialPanel.is-auto-hidden,
+body.hide-unused-right .hardware-panel.is-auto-hidden {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .size-mode-summary {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+}

@@ -1,4 +1,4 @@
-// 台灣木工櫃體 3D 裁切計算工具 MVP v3.1
+// 台灣木工櫃體 3D 裁切計算工具 MVP v3.2
 // 單位：cm
 // 重點：多板材分組、裁切清單、簡易矩形排版、成本與利用率、3D 示意
 
@@ -554,7 +554,8 @@ function initModeSwitch() {
 
   if (cabinetBtn) cabinetBtn.addEventListener("click", () => {
     setToolMode("cabinet");
-    renderAll();
+    syncSizeMode("init");
+  renderAll();
   });
 
   if (boxBtn) boxBtn.addEventListener("click", () => {
@@ -687,6 +688,131 @@ function initQuickMaterialControls() {
   });
 }
 
+
+let isSyncingSizeMode = false;
+
+function getDepthDeductionsForInputs() {
+  const t = n("boardT");
+  const hasBack = $("hasBack") ? $("hasBack").checked : false;
+  const backType = $("backType") ? $("backType").value : "external";
+  const backT = $("backT") ? n("backT") : 0;
+  const doorType = $("doorType") ? $("doorType").value : "none";
+  const doorStyle = $("doorStyle") ? $("doorStyle").value : "overlay";
+
+  const frontInset = doorType !== "none" && doorStyle === "inset" ? t : 0;
+  const backInset = hasBack && backType === "inset" ? backT : 0;
+
+  return { frontInset: cm(frontInset), backInset: cm(backInset) };
+}
+
+function computeInnerFromOuter() {
+  const W = n("cabinetW");
+  const H = n("cabinetH");
+  const D = n("cabinetD");
+  const t = n("boardT");
+  const { frontInset, backInset } = getDepthDeductionsForInputs();
+
+  return {
+    innerW: cm(Math.max(0, W - 2 * t)),
+    innerH: cm(Math.max(0, H - 2 * t)),
+    innerD: cm(Math.max(0, D - frontInset - backInset)),
+    frontInset,
+    backInset,
+  };
+}
+
+function computeOuterFromInner() {
+  const innerW = n("innerW");
+  const innerH = n("innerH");
+  const innerD = n("innerD");
+  const t = n("boardT");
+  const { frontInset, backInset } = getDepthDeductionsForInputs();
+
+  return {
+    W: cm(innerW + 2 * t),
+    H: cm(innerH + 2 * t),
+    D: cm(innerD + frontInset + backInset),
+    frontInset,
+    backInset,
+  };
+}
+
+function syncSizeMode() {
+  if (isSyncingSizeMode) return;
+  const modeEl = $("sizeInputMode");
+  if (!modeEl) return;
+
+  isSyncingSizeMode = true;
+  try {
+    const isInner = modeEl.value === "inner";
+    document.querySelectorAll(".inner-size-field").forEach(el => el.classList.toggle("is-hidden", !isInner));
+    document.querySelectorAll(".outer-size-field").forEach(el => el.classList.toggle("is-hidden", isInner));
+
+    if (isInner) {
+      const outer = computeOuterFromInner();
+      if ($("cabinetW")) $("cabinetW").value = outer.W;
+      if ($("cabinetH")) $("cabinetH").value = outer.H;
+      if ($("cabinetD")) $("cabinetD").value = outer.D;
+    } else {
+      const inner = computeInnerFromOuter();
+      if ($("innerW")) $("innerW").value = inner.innerW;
+      if ($("innerH")) $("innerH").value = inner.innerH;
+      if ($("innerD")) $("innerD").value = inner.innerD;
+    }
+
+    updateSizeModeSummary();
+  } finally {
+    isSyncingSizeMode = false;
+  }
+}
+
+function updateSizeModeSummary() {
+  const el = $("sizeModeSummary");
+  const modeEl = $("sizeInputMode");
+  if (!el || !modeEl) return;
+
+  const inner = computeInnerFromOuter();
+  if (modeEl.value === "inner") {
+    el.textContent = `目前使用內尺寸輸入。外尺寸會自動校正；內深已考慮前方內崁門 ${inner.frontInset} cm、內嵌背板 ${inner.backInset} cm。`;
+  } else {
+    el.textContent = `目前使用外尺寸輸入。推算內尺寸約：內寬 ${inner.innerW} cm、內高 ${inner.innerH} cm、內深 ${inner.innerD} cm；內深已扣前方內崁門 ${inner.frontInset} cm、內嵌背板 ${inner.backInset} cm。`;
+  }
+}
+
+function getEffectiveInnerSize() {
+  const inner = computeInnerFromOuter();
+  return { innerW: inner.innerW, innerH: inner.innerH, innerD: inner.innerD };
+}
+
+function applyAutoCollapseRightPanels() {
+  const isBox = currentMode === "box";
+  const hasBack = $("hasBack") ? $("hasBack").checked : false;
+  const hasDoor = $("doorType") ? $("doorType").value !== "none" : false;
+  const hasDrawers = $("hasDrawers") ? $("hasDrawers").checked : false;
+
+  document.body.classList.add("hide-unused-right");
+
+  const hide = (id, shouldHide) => {
+    const el = $(id);
+    if (!el) return;
+    el.classList.toggle("is-auto-hidden", shouldHide);
+    el.classList.toggle("is-hidden", shouldHide);
+    el.style.display = shouldHide ? "none" : "";
+  };
+
+  hide("backMaterialPanel", isBox || !hasBack);
+  hide("doorMaterialPanel", isBox || (!hasDoor && !hasDrawers));
+  hide("drawerSideMaterialPanel", isBox || !hasDrawers);
+  hide("drawerBottomMaterialPanel", isBox || !hasDrawers);
+
+  document.querySelectorAll(".hardware-panel").forEach((el) => {
+    const shouldHide = isBox || (!hasDoor && !hasDrawers);
+    el.classList.toggle("is-auto-hidden", shouldHide);
+    el.classList.toggle("is-hidden", shouldHide);
+    el.style.display = shouldHide ? "none" : "";
+  });
+}
+
 function getState() {
   syncDoorFromBody();
 
@@ -717,6 +843,8 @@ function getState() {
     W: n("cabinetW"),
     H: n("cabinetH"),
     D: n("cabinetD"),
+    sizeInputMode: $("sizeInputMode") ? $("sizeInputMode").value : "outer",
+    innerSize: getEffectiveInnerSize(),
     t: n("boardT"),
     assemblyType: $("assemblyType").value,
     shelfCount: Math.max(0, Math.floor(n("shelfCount"))),
@@ -1702,9 +1830,11 @@ function renderHardware(state, hardware) {
 }
 
 function renderAll() {
+  syncSizeMode();
   autoSuggestHardwareFromFeatures();
   updateConditionalUI();
   applyModeVisibility();
+  applyAutoCollapseRightPanels();
   const state = getState();
   lastState = state;
 
@@ -1730,7 +1860,7 @@ function renderAll() {
   render3D(state);
   renderEngineeringDrawing(state);
 
-  $("dimensionText").textContent = `外尺寸：${state.W} × ${state.H} × ${state.D} cm`;
+  $("dimensionText").textContent = `外尺寸：${state.W} × ${state.H} × ${state.D} cm｜內尺寸：約 ${state.innerSize.innerW} × ${state.innerSize.innerH} × ${state.innerSize.innerD} cm`;
   applyModeVisibility();
 }
 
@@ -2712,6 +2842,7 @@ function updateConditionalUI() {
     .forEach((el) => el.classList.toggle("is-hidden", isBox));
 
   applyModeVisibility();
+  applyAutoCollapseRightPanels();
   const drawerHint = $("uiHint");
   if (drawerHint) {
     const active = [];
@@ -2819,6 +2950,10 @@ function bindEvents() {
       if (kind === "sheetPreset") {
         syncSheetPreset(role);
         if (role === "back" || role === "door") syncQuickMaterialFromRight(role);
+      }
+
+      if (["sizeInputMode", "innerW", "innerH", "innerD", "cabinetW", "cabinetH", "cabinetD", "boardT", "backT", "backType", "hasBack", "doorType", "doorStyle"].includes(el.id)) {
+        syncSizeMode();
       }
 
       if (["bodySheetW", "bodySheetL"].includes(el.id)) $("bodySheetPreset").value = "custom";

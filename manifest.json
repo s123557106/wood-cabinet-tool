@@ -1,7 +1,7 @@
 {
   "name": "台灣木工櫃體計算工具",
   "short_name": "櫃體計算",
-  "description": "木工櫃體 3D 示意、裁切清單、板材排版、成本與五金估算工具，夾板與藝豐合板分流版",
+  "description": "木工櫃體 3D 示意、裁切清單、板材排版、成本與五金估算工具，內尺寸輸入與自動收合版",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

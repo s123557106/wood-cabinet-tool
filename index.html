@@ -52,19 +52,37 @@
 
       <section class="form-section">
         <h3>外尺寸</h3>
+        <label>尺寸輸入方式
+          <select id="sizeInputMode">
+            <option value="outer" selected>用外尺寸輸入</option>
+            <option value="inner">用內尺寸輸入</option>
+          </select>
+        </label>
         <div class="grid-2">
-          <label>外寬 W（cm）
+          <label class="outer-size-field">外寬 W（cm）
             <input id="cabinetW" type="number" value="80" min="0.1" step="0.1">
           </label>
-          <label>外高 H（cm）
+          <label class="outer-size-field">外高 H（cm）
             <input id="cabinetH" type="number" value="120" min="0.1" step="0.1">
           </label>
-          <label>外深 D（cm）
+          <label class="outer-size-field">外深 D（cm）
             <input id="cabinetD" type="number" value="40" min="0.1" step="0.1">
+          </label>
+          <label class="inner-size-field is-hidden">內寬（cm）
+            <input id="innerW" type="number" value="76.4" min="0.1" step="0.1">
+          </label>
+          <label class="inner-size-field is-hidden">內高（cm）
+            <input id="innerH" type="number" value="116.4" min="0.1" step="0.1">
+          </label>
+          <label class="inner-size-field is-hidden">內深（cm）
+            <input id="innerD" type="number" value="40" min="0.1" step="0.1">
           </label>
           <label>主結構板厚 t（cm）
             <input id="boardT" type="number" value="1.8" min="0.1" step="0.01">
           </label>
+          <p id="sizeModeSummary" class="material-use size-mode-summary">
+            目前使用外尺寸輸入。切換為內尺寸時，系統會依板厚、內崁門、內嵌背板自動反推外尺寸。
+          </p>
         </div>
       </section>
 
