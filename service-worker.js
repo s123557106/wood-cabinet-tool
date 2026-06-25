@@ -1,4 +1,4 @@
-const CACHE_NAME = "wood-cabinet-tool-v3-4";
+const CACHE_NAME = "wood-cabinet-tool-v3-6";
 const PRECACHE_URLS = [
   "./",
   "./index.html",

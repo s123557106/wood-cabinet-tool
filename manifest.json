@@ -1,7 +1,7 @@
 {
   "name": "癮密木工櫃體工具",
   "short_name": "櫃體工具",
-  "description": "台灣木工櫃體 3D 裁切計算工具-癮密工作室設計，設計人：王振宇，PWA 快取修正版",
+  "description": "台灣木工櫃體 3D 裁切計算工具-癮密工作室設計，設計人：王振宇，副標題文字修正版",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
